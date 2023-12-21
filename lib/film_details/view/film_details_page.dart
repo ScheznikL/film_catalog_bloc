@@ -1,35 +1,159 @@
+import 'package:film_catalog_bloc/film_details/bloc/local_film_bloc.dart';
+import 'package:film_catalog_bloc/film_manager/bloc/film_bloc.dart';
+import 'package:film_catalog_bloc/film_manager/model/credits.dart';
 import 'package:film_catalog_bloc/film_manager/model/film.dart';
+import 'package:film_catalog_bloc/splash/splash.dart';
+import 'package:film_catalog_bloc/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 
 import '../../film_manager/model/film_details.dart';
+import '../../repositories/api_repository/film_api.dart';
+
 
 const String defaultImage =
     'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=1756&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
 
 class FilmDetailsPage extends StatefulWidget {
-  final FilmDetails? film;
-
-  const FilmDetailsPage({super.key, this.film});
+  const FilmDetailsPage({super.key});
 
   @override
-  State<FilmDetailsPage> createState() => _FilmDetailsPageState(film: film);
+  State<FilmDetailsPage> createState() => _FilmDetailsPageState();
 }
 
 class _FilmDetailsPageState extends State<FilmDetailsPage> {
+  late FilmDetails? film;
+  late var sampleBloc;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  //sampleBloc.add(FilmsStatusChanged.withId(APIStatus.loadingFilmDetails, id));
+
+  late int? id;
+  FilmDetails _details = FilmDetails.empty();
+  @override
+  Widget build(BuildContext context) {
+    sampleBloc = BlocProvider.of<FilmBloc>(context);
+    id = ModalRoute.of(context)!.settings.arguments as int?;
+    return MultiBlocProvider(
+  providers: [
+    BlocProvider.value(
+      value: BlocProvider.of<FilmBloc>(context)
+        ..add(FilmsStatusChanged.withId(APIStatus.loadingFilmDetails, id)),
+),
+    BlocProvider(
+      create: (context) => LocalFilmBloc()..add(CheckFilmExist()),
+    ),
+  ],
+  child: const LocalFilmsCheck(),
+);
+
+/*
+    BlocListener<FilmBloc, FilmState>(
+      listener: (context, state) {
+        switch (state.status) {
+          case APIStatus.filmDetailsLoaded:
+            _details = state.filmDetails;
+            /*FilmDetailsWidget(
+                maskingGradient: _maskingGradient, film: state.filmDetails);*/
+          case APIStatus.loadingFilmDetails:
+            const Center(child: CircularProgressIndicator());
+          case APIStatus.popularFilmsLoaded:
+          case APIStatus.error:
+            Center(
+                child: Text('Error',
+                    style: Theme.of(context).textTheme.titleMedium));
+          case APIStatus.unknown:
+            const Center(child: Center(child: CircularProgressIndicator()));
+          case APIStatus.empty:
+            const Center(child: Text('empty'));
+          case APIStatus.loadingPopularFilms: // todo another
+        }
+      },
+    child:FilmDetailsWidget(
+        maskingGradient: _maskingGradient, film: _details),
+    );*/
+  }
+}
+
+class DetailsMain extends StatelessWidget {
+  const DetailsMain({
+    super.key,
+    required Gradient maskingGradient,
+  }) : _maskingGradient = maskingGradient;
+
+  final Gradient _maskingGradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<FilmBloc, FilmState>(
+          //todo redo
+          builder: (context, state) {
+            if (state.status case APIStatus.filmDetailsLoaded) {
+              BlocProvider.of<LocalFilmBloc>(context)..add(SaveDataEvent(state.filmDetails));
+              return FilmDetailsWidget(
+                  maskingGradient: _maskingGradient, film: state.filmDetails);
+            } else if (state.status case APIStatus.loadingFilmDetails) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state.status case APIStatus.error) {
+              return Center(
+                  child: Text('Error',
+                      style: Theme.of(context).textTheme.titleMedium));
+            } else if (state.status case APIStatus.unknown) {
+              return const Center(
+                  child: Center(child: CircularProgressIndicator()));
+            } else {
+              return const Center(child: Text('empty'));
+            }
+          },
+        );
+  }
+}
+
+
+class LocalFilmsCheck extends StatelessWidget { // todo converted not a prob
+  const LocalFilmsCheck({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<LocalFilmBloc, LocalFilmState>(
+      builder: (context, state) {
+        if (state is FilmLoadedState){
+          return FilmDetailsWidget(
+              maskingGradient: maskingGradient(), film: state.filmDetails);
+        }
+        if(state is FileExistState && state.exist == true){
+          context.read<LocalFilmBloc>().add(LoadDataEvent());
+          return const SplashPage();
+        }
+        if(state is FileExistState && state.exist == false){
+          return DetailsMain(maskingGradient: maskingGradient());
+        }
+        if (state is FilmLoadedState){
+          return FilmDetailsWidget(
+              maskingGradient: maskingGradient(), film: state.filmDetails);
+        }
+        //todo error view
+          return Text('Local storage Error ☹',style: Theme.of(context).textTheme.displayLarge,);
+      }
+    );
+  }
+}
+
+class FilmDetailsWidget extends StatelessWidget {
+  const FilmDetailsWidget({
+    super.key,
+    required Gradient maskingGradient,
+    required this.film,
+  }) : _maskingGradient = maskingGradient;
+
+  final Gradient _maskingGradient;
   final FilmDetails? film;
-
-  _FilmDetailsPageState({this.film});
-
-  static const Gradient _maskingGradient = LinearGradient(
-    // This gradient goes from fully transparent to fully opaque black...
-    colors: [Colors.transparent, Colors.white],
-    // ... from the top (transparent) to half (0.5) of the way to the bottom.
-    stops: [0.0, 0.5],
-    begin: Alignment.bottomCenter,
-    end: Alignment.center,
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +167,7 @@ class _FilmDetailsPageState extends State<FilmDetailsPage> {
               TopFilmDetailsImage(
                   maskingGradient: _maskingGradient,
                   filmBackgroundImg: film!.backdropPath!),
-              FilmDetailsInfo(film: film!.voteAverage!),
+              FilmDetailsInfo(film: film),
               CreditsSection(
                 credits: film!.credits,
               ),
@@ -84,30 +208,6 @@ class CollectPersonalInfoPage extends StatelessWidget {
           color: Colors.lightBlue,
           alignment: Alignment.center,
           child: const Text('Collect Personal Info Page'),
-        ),
-      ),
-    );
-  }
-}
-
-class ChooseCredentialsPage extends StatelessWidget {
-  const ChooseCredentialsPage({
-    super.key,
-    required this.onSignupComplete,
-  });
-
-  final VoidCallback onSignupComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onSignupComplete,
-      child: DefaultTextStyle(
-        style: Theme.of(context).textTheme.headlineMedium!,
-        child: Container(
-          color: Colors.pinkAccent,
-          alignment: Alignment.center,
-          child: const Text('Choose Credentials Page'),
         ),
       ),
     );
@@ -269,7 +369,7 @@ class FeedbackButtons extends StatelessWidget {
 class CreditsSection extends StatelessWidget {
   const CreditsSection({super.key, required credits}) : _credits = credits;
 
-  final FilmDetails _credits;
+  final Credits _credits;
 
   @override
   Widget build(BuildContext context) {
@@ -284,14 +384,13 @@ class CreditsSection extends StatelessWidget {
               const TextSpan(
                   text: 'Cast: ', style: TextStyle(color: Colors.black38)),
               TextSpan(
-                text: _credits.credits.cast.join(', '),
+                text: _credits.cast.toString(),
               ),
               const TextSpan(
                   text: '\nDirectors: ',
                   style: TextStyle(color: Colors.black38)),
               TextSpan(
-                  text:
-                      '${_credits.credits.director}, ${_credits.credits.coDirector ?? " "}'),
+                  text: '${_credits.director}, ${_credits.coDirector ?? " "}'),
               const WidgetSpan(
                   child: Padding(
                 padding: EdgeInsets.only(bottom: 10.0, top: 16),
@@ -347,7 +446,7 @@ class FilmDetailsInfo extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Padding(
-                padding: EdgeInsets.only(bottom: 3.0),
+                padding: const EdgeInsets.only(bottom: 3.0),
                 child: RichText(
                   text: TextSpan(
                     children: [
@@ -358,19 +457,25 @@ class FilmDetailsInfo extends StatelessWidget {
                       ),
                       const TextSpan(
                         text: '\u2981',
+                        style: TextStyle(color: Color.fromARGB(255, 120, 132, 192)),
                       ),
-                      for (var genre in _film.genres) //todo
-                        TextSpan(
-                          text: '${genre.name}, ',
-                        ),
+                     /* for (int i =0; i<_film.genres!.length; i++)
+                        ...[
+                          if(i<4)
+                          TextSpan(
+                            text: '${_film.genres![i].name}, ',
+                          ),
+                        ]*/
                     ],
                   ),
                 )),
             Text(
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
               _film.title!,
               style: const TextStyle(
                   fontStyle: FontStyle.normal,
-                  fontSize: 34,
+                  fontSize: 22,
                   fontWeight: FontWeight.w400,
                   wordSpacing: 1,
                   letterSpacing: 1),
@@ -390,7 +495,7 @@ class FilmDetailsInfo extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: _film.overview ?? "N/A",
+                        text: _film.overview ?? " ",
                       ),
                       TextSpan(
                         text: "More...", //todo More info

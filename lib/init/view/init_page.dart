@@ -148,14 +148,12 @@ class FilmsBuilder extends StatelessWidget {
           itemBuilder: (BuildContext context, int index) {
             return GestureDetector(
               onTap: () {
-                //todo FilmDetails
-                context.read<FilmBloc>().add(FilmsStatusChanged.withId(
-                    APIStatus.loadingFilmDetails, popularFilms![index].id));
+                //todo FilmDetail
 
                 Navigator.pushNamed(
                   context,
                   '/filmdetails',
-                  arguments: state.filmDetails,
+                  arguments: popularFilms![index].id,
                 );
               },
               child: Column(

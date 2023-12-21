@@ -7,7 +7,7 @@ import 'credits.dart';
 class FilmDetails extends Film {
 // final int id;
   // final String backdropPath;
-  final List<GenreModel> genres;
+  final List<GenreModel>? genres;
 /*  final String overview;
   final double? popularity;
   final String posterPath;*/
@@ -157,16 +157,20 @@ class FilmDetails extends Film {
       originalLanguage: originalLanguage ?? this.originalLanguage,
     );
   }
-
+// var ttt =  ProductCompany.fromJson(jsonData['production_companies'][0] as Map<String,dynamic>);
   FilmDetails.fromJson(Map<String, dynamic> json):
-      genres= List<GenreModel>.from(json['genres']),
-      productCompanies= List<ProductCompany>.from(json['production_companies']),
-      revenue= json['revenue'],
-      runtime= json['runtime'],
-      credits= json['credits'].getCredits(),
-      similar= json['similar'].getSimilar(),
-      budget= json['budget'],
-      originalLanguage= json['original_language'],
+      genres = List.from(json['genres'])
+          .map((entry) => GenreModel.fromJson(entry))
+          .toList(),
+      productCompanies = (json['production_companies'] as List<dynamic>).map((entry) {
+        return ProductCompany.fromJson(entry);
+      }).toList(),
+      revenue = json['revenue'],
+      runtime = json['runtime'],
+      credits = Credits.fromJson(json['credits']),
+      similar = List.from(json['similar']["results"]).map((js) => Film.fromJson(js)).toList(),
+      budget = json['budget'],
+      originalLanguage = json['original_language'],
       super.fromJson(json);
 
 }
@@ -186,42 +190,27 @@ extension GetProperList on Map {
     }
     return similar;
   }
+
+
+}
+
+extension GetGenreForList on List<dynamic>{
+
+  List<GenreModel> getGenres() {
+    var l = this;/**************/
+
+    List<GenreModel> genres = [];
+    for (dynamic f in this) {
+      if (f != null) {
+        genres.add(GenreModel.fromJson(f));
+      } else {
+        continue;
+      }
+    }
+    return genres;
+  }
 }
 
 extension GetProperListOfCredits on Map {
-  Credits getCredits() {
-    if (containsKey('cast') && containsKey('crew')) {
-      String director = List.from(this['crew']).firstWhere((x) =>  x['job'] == 'Director')['name'] ??  'N/A';
-      String coDirector = List.from(this['crew']).firstWhere((x) =>  x['job'] == 'Co-Director')['name'] ??  'N/A';
-      return Credits(
-          cast: this['cast'],
-          director: director,
-          coDirector: coDirector);
-    }
-    return const Credits.empty();
-  }
 
-  static String getDirectorName(List rawData) {
-    return rawData.firstWhere(
-          (e) => e['job'] == 'Director',
-          orElse: () => {'name': null},
-        )['name'] ??
-        'N/A';
-  }
-
-  static String getWriterName(List rawData) {
-    return rawData.firstWhere(
-          (e) => e['job'] == 'Writer',
-          orElse: () => {'name': null},
-        )['name'] ??
-        'N/A';
-  }
-
-  static String getProducerName(List rawData) {
-    return rawData.firstWhere(
-          (e) => e['job'] == 'Producer' || e['job'] == 'Executive Producer',
-          orElse: () => {'name': null},
-        )['name'] ??
-        'N/A';
-  }
 }

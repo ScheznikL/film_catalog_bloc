@@ -2,7 +2,6 @@ import 'package:film_catalog_bloc/film_details/view/film_details_page.dart';
 import 'package:film_catalog_bloc/film_manager/bloc/film_bloc.dart';
 import 'package:film_catalog_bloc/repositories/api_repository/film_api.dart';
 import 'package:film_catalog_bloc/repositories/authentication_repository/authentication_repository_base.dart';
-import 'package:film_catalog_bloc/film_manager/model/film.dart';
 import 'package:film_catalog_bloc/repositories/user_repository/user_repository_base.dart';
 import 'package:film_catalog_bloc/splash/view/splash_page.dart';
 import 'package:film_catalog_bloc/theme/theme.dart';
@@ -12,6 +11,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'authentication/bloc/authentication_bloc.dart';
 import 'init/view/init_page.dart';
 import 'login/view/auth_page.dart';
+
+// You can pass any object to the arguments parameter.
+// In this example, create a class that contains both
+// a customizable title and message.
+class ScreenArguments {
+  final String title;
+  final String message;
+
+  ScreenArguments(this.title, this.message);
+}
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -70,7 +79,7 @@ class _AppState extends State<App> {
             routes: <String, WidgetBuilder>{
               '/': (BuildContext context) => const AppView(),
               '/signup': (BuildContext context) => const AuthorizationPage(),
-              '/filmdetails':(BuildContext context) => const FilmDetailsPage(),
+              '/filmdetails': (BuildContext context) => FilmDetailsPage(),
             },
             onGenerateRoute: (_) => SplashPage.route(),
             // home: AppView(navigatorKey: navigatorKey),
@@ -79,54 +88,9 @@ class _AppState extends State<App> {
   }
 }
 
-class AppView extends StatefulWidget {
-  const AppView({this.navigatorKey, super.key});
+class AppView extends StatelessWidget { // todo converted not a prob
+  const AppView({super.key});
 
-  final GlobalKey<NavigatorState>? navigatorKey;
-  @override
-  State<AppView> createState() => _AppViewState();
-}
-
-/*
-class _AppViewState extends State<AppView> {
-
-  final GlobalKey<NavigatorState> _navigator = GlobalKey<NavigatorState>();
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Film Catalog',
-     theme: themeIndigo(),
-      navigatorKey: _navigator,
-      builder: (context, child) {
-        return BlocBuilder<FilmBloc, FilmState>(builder: (context, state) {
-          switch (state.status) {
-            case APIStatus.loading:
-              return const Center(child: CircularProgressIndicator());
-            case APIStatus.loaded:
-              return InitialPage(popularFilms: state.popularFilms);
-            case APIStatus.error:
-              return Center(child: Text('Error',style: Theme.of(context).textTheme.titleMedium));
-            case APIStatus.unknown:
-              return const Center(child: Text('unknown'));
-            case APIStatus.empty:
-              return const Center(child: Text('empty'));
-          }
-        });
-      },
-      initialRoute: '/',
-      routes: <String, WidgetBuilder>{
-        '/': (BuildContext context) => const AppView(),
-        '/signup': (BuildContext context) => const AuthorizationPage(),
-      },
-      onGenerateRoute: (_) => SplashPage.route(),
-    );
-  }
-}*/
-
-class _AppViewState extends State<AppView> {
-
-  //NavigatorState get _navigator => _navigatorKey.currentState;;
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthenticationBloc, AuthenticationState>(
@@ -135,7 +99,7 @@ class _AppViewState extends State<AppView> {
           case AuthenticationStatus.authenticated:
             break;
           case AuthenticationStatus.unauthenticated:
-            WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
               getAuthPage(context: context);
             });
           case AuthenticationStatus.unknown:
@@ -158,24 +122,24 @@ class _PopularFilmsState extends State<_PopularFilms> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<FilmBloc, FilmState>(builder: (context, state) {
-      switch (state.status) {
-        case APIStatus.loadingPopularFilms:
-          return const Center(child: CircularProgressIndicator());
-        case APIStatus.loaded:
-          return InitialPage(popularFilms: state.popularFilms);
-        case APIStatus.error:
-          return Center(
-              child: Text('Error',
-                  style: Theme.of(context).textTheme.titleMedium));
-        case APIStatus.unknown:
-          return Center(child: Text('unknown',
-                  style: Theme.of(context).textTheme.titleMedium));
-        case APIStatus.empty:
-          return const Center(child: Text('empty'));
-        case APIStatus.loadingFilmDetails: // todo another
-          return const Center(child: Text('Error'));
-
+      if (state.status case APIStatus.loadingPopularFilms) {
+        return const Center(child: CircularProgressIndicator());
+      } else if (state.status case APIStatus.popularFilmsLoaded) {
+        return InitialPage(popularFilms: state.popularFilms);
+      } else if (state.status case APIStatus.error) {
+        return Center(
+            child:
+                Text('Error', style: Theme.of(context).textTheme.titleMedium));
+      } else if (state.status case APIStatus.unknown) {
+        return Center(
+            child: Text('unknown',
+                style: Theme.of(context).textTheme.titleMedium));
+      } else if (state.status case APIStatus.empty) {
+        return const Center(child: Text('empty'));
+      } else if (state.status case APIStatus.loadingFilmDetails) {
+        return const Center(child: Text('Error'));
       }
+      return const Center(child: CircularProgressIndicator());
     });
   }
 }

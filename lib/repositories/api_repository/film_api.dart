@@ -5,8 +5,9 @@ import 'dart:convert';
 
 import '../../film_manager/model/film_details.dart';
 import '../../film_manager/model/film.dart';
+import '../../film_manager/model/product_companies.dart';
 
-enum APIStatus { unknown, loadingPopularFilms,loadingFilmDetails, loaded, error, empty }
+enum APIStatus { unknown, loadingPopularFilms,loadingFilmDetails, popularFilmsLoaded,filmDetailsLoaded, error, empty }
 var apiKey = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
 
 class FilmAPIRepository {
@@ -90,22 +91,22 @@ class FilmAPIRepository {
     }
   }
 
-  Future<FilmDetails> getFilmDetails(int filmId) async {
+  Future<FilmDetails?> getFilmDetails(int filmId) async {
     var apiUrl = Uri.parse(
         "https://api.themoviedb.org/3/movie/$filmId?api_key=$apiKey&append_to_response=videos,credits,similar");
-
     try {
       final response = await http.get(apiUrl);
       if (response.statusCode == 200) {
         var jsonData = json.decode(response.body) as Map<String, dynamic>;
+
         return FilmDetails.fromJson(jsonData);
       } else {
         _controller.add(APIStatus.error);
-        return const FilmDetails.empty();
+        return null;
       }
     } catch (e) {
       _controller.add(APIStatus.error);
-      return const FilmDetails.empty();
+      return null;
     }
   }
 

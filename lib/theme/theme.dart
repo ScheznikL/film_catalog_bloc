@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+part 'gradient.dart';
+
 ThemeData themeIndigo () {
   return ThemeData(
 //Segoe UI

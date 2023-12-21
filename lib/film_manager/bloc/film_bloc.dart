@@ -59,17 +59,17 @@ class FilmBloc extends Bloc<FilmEvent, FilmState> {
       ) async {
     switch (event.status) {
       case APIStatus.empty:
-        return emit(state.copyWith(status: APIStatus.empty, popularFilms: []));
+        return emit(state.copyWith(status: APIStatus.empty));
       case APIStatus.error:
-        return emit(state.copyWith(status: APIStatus.error,popularFilms: []));
-      case APIStatus.loaded:
-        return emit(state.copyWith(status: APIStatus.loaded,popularFilms: []));
+        return emit(state.copyWith(status: APIStatus.error));
+      case APIStatus.popularFilmsLoaded:
+        return emit(state.copyWith(status: APIStatus.popularFilmsLoaded));
       case APIStatus.loadingPopularFilms:
         ++_page;
         final popularFilms = await _tryGetPopularFilms(page: _page);
         return emit(
           popularFilms != null
-              ? state.copyWith(popularFilms: popularFilms,status: APIStatus.loaded)
+              ? state.copyWith(popularFilms: popularFilms,status: APIStatus.popularFilmsLoaded)
               : state.copyWith(status: APIStatus.unknown,popularFilms: []) ,
         );
       case APIStatus.unknown:
@@ -78,9 +78,11 @@ class FilmBloc extends Bloc<FilmEvent, FilmState> {
         final film = await _tryGetFilmDetails(id: event.id);
         return emit(
           film != null
-              ? state.copyWith(filmDetails: film, status: APIStatus.loaded)
-              : state.copyWith(status: APIStatus.unknown,popularFilms: []) ,
+              ? state.copyWith(filmDetails: film, status: APIStatus.filmDetailsLoaded)
+              : state.copyWith(status: APIStatus.unknown,filmDetails: FilmDetails.empty()) ,
         );
+      case APIStatus.filmDetailsLoaded:
+       return emit(state.copyWith(status: APIStatus.filmDetailsLoaded));
     }
   }
 

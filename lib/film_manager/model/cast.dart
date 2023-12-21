@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:film_catalog_bloc/film_manager/model/credits.dart';
 
 class Cast extends Equatable {
   final String name;
@@ -21,5 +22,13 @@ class Cast extends Equatable {
   @override
   String toString() {
     return '{$name}';
+  }
+
+  factory Cast.fromJson(Map<String, dynamic> json) {
+    return Cast(
+      name: json['name'] ?? "",
+      profilePath: json['profile_path'] ?? "",
+      character: json['character'] ?? "",
+    );
   }
 }
