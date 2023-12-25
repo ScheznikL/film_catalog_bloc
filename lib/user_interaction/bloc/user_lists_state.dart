@@ -1,4 +1,4 @@
-part of 'film_details_bloc.dart';
+part of 'user_lists_bloc.dart';
 
 class UserListState extends Equatable {
   final List<Film>? userLikes;
@@ -10,6 +10,9 @@ class UserListState extends Equatable {
   List<Object?> get props => [userLikes, userWatch];
 }
 
+
+class UserListsSaved extends UserListState {
+}
 
 class FilmLiked extends UserListState {
   final List<Film> userLikes;

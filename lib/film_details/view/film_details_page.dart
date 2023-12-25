@@ -1,17 +1,21 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:film_catalog_bloc/film_details/bloc/local_film_bloc.dart';
 import 'package:film_catalog_bloc/film_manager/bloc/film_bloc.dart';
 import 'package:film_catalog_bloc/film_manager/model/credits.dart';
 import 'package:film_catalog_bloc/film_manager/model/film.dart';
 import 'package:film_catalog_bloc/splash/splash.dart';
 import 'package:film_catalog_bloc/theme/theme.dart';
+import 'package:film_catalog_bloc/util/dialogs.dart';
+import 'package:film_catalog_bloc/widgets/appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 
 import '../../film_manager/model/film_details.dart';
 import '../../repositories/api_repository/film_api.dart';
-
+import '../../user_interaction/bloc/user_lists_bloc.dart';
 
 const String defaultImage =
     'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=1756&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
@@ -25,59 +29,78 @@ class FilmDetailsPage extends StatefulWidget {
 
 class _FilmDetailsPageState extends State<FilmDetailsPage> {
   late FilmDetails? film;
-  late var sampleBloc;
+  late FilmBloc sampleBloc;
 
   @override
   void initState() {
     super.initState();
   }
 
-  //sampleBloc.add(FilmsStatusChanged.withId(APIStatus.loadingFilmDetails, id));
-
-  late int? id;
-  FilmDetails _details = FilmDetails.empty();
+  late int? filmId;
   @override
   Widget build(BuildContext context) {
     sampleBloc = BlocProvider.of<FilmBloc>(context);
-    id = ModalRoute.of(context)!.settings.arguments as int?;
+    filmId = ModalRoute.of(context)!.settings.arguments as int?;
     return MultiBlocProvider(
-  providers: [
-    BlocProvider.value(
-      value: BlocProvider.of<FilmBloc>(context)
-        ..add(FilmsStatusChanged.withId(APIStatus.loadingFilmDetails, id)),
-),
-    BlocProvider(
-      create: (context) => LocalFilmBloc()..add(CheckFilmExist()),
-    ),
-  ],
-  child: const LocalFilmsCheck(),
-);
+      providers: [
+        BlocProvider.value(
+          value: BlocProvider.of<FilmBloc>(
+              context), /*
+            ..add(FilmsStatusChanged.withId(APIStatus.loadingFilmDetails, filmId)),*/
+        ),
+        BlocProvider(
+          create: (context) =>
+              LocalFilmBloc()..add(CheckFilmExist(filmId.toString())),
+        ),
+        BlocProvider.value(value: BlocProvider.of<UserListBloc>(context)),
+      ],
+      child: LocalFilmsCheck(id: filmId.toString()),
+    );
+  }
+}
 
-/*
-    BlocListener<FilmBloc, FilmState>(
-      listener: (context, state) {
-        switch (state.status) {
-          case APIStatus.filmDetailsLoaded:
-            _details = state.filmDetails;
-            /*FilmDetailsWidget(
-                maskingGradient: _maskingGradient, film: state.filmDetails);*/
-          case APIStatus.loadingFilmDetails:
-            const Center(child: CircularProgressIndicator());
-          case APIStatus.popularFilmsLoaded:
-          case APIStatus.error:
-            Center(
-                child: Text('Error',
-                    style: Theme.of(context).textTheme.titleMedium));
-          case APIStatus.unknown:
-            const Center(child: Center(child: CircularProgressIndicator()));
-          case APIStatus.empty:
-            const Center(child: Text('empty'));
-          case APIStatus.loadingPopularFilms: // todo another
-        }
-      },
-    child:FilmDetailsWidget(
-        maskingGradient: _maskingGradient, film: _details),
-    );*/
+class LocalFilmsCheck extends StatelessWidget {
+  final String id;
+
+  // todo converted not a prob
+  const LocalFilmsCheck({required this.id, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<LocalFilmBloc, LocalFilmState>(
+        builder: (context, state) {
+      if (state is FilmLoadedState) {
+        return FilmDetailsWidget(
+            maskingGradient: maskingGradient(), film: state.filmDetails);
+      }
+      if (state is FileExistState && state.exist) {
+        context.read<LocalFilmBloc>().add(LoadDataEvent(id));
+        return const SplashLoad();
+      }
+      if (state is FileExistState && !state.exist) {
+        BlocProvider.of<FilmBloc>(context).add(FilmsStatusChanged.withId(
+            APIStatus.loadingFilmDetails, int.parse(id)));
+        return DetailsMain(maskingGradient: maskingGradient());
+      }
+      if (state is FilmLoadedState) {
+        return FilmDetailsWidget(
+            maskingGradient: maskingGradient(), film: state.filmDetails);
+      }
+      //todo error view
+      if (state is LoadSaveErrorState) {
+        return Center(
+          child: Text(
+            'Local storage Error ☹\r\n ${state.message}',
+            style: Theme.of(context).textTheme.displayMedium,
+          ),
+        );
+      }
+      if (state is FilmSavedState) {
+        return DetailsMain(maskingGradient: maskingGradient());
+      } else {
+        return SplashLoad();
+      }
+    });
   }
 }
 
@@ -85,62 +108,39 @@ class DetailsMain extends StatelessWidget {
   const DetailsMain({
     super.key,
     required Gradient maskingGradient,
+    this.filmId,
   }) : _maskingGradient = maskingGradient;
 
   final Gradient _maskingGradient;
+  final filmId;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<FilmBloc, FilmState>(
-          //todo redo
-          builder: (context, state) {
-            if (state.status case APIStatus.filmDetailsLoaded) {
-              BlocProvider.of<LocalFilmBloc>(context)..add(SaveDataEvent(state.filmDetails));
-              return FilmDetailsWidget(
-                  maskingGradient: _maskingGradient, film: state.filmDetails);
-            } else if (state.status case APIStatus.loadingFilmDetails) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state.status case APIStatus.error) {
-              return Center(
-                  child: Text('Error',
-                      style: Theme.of(context).textTheme.titleMedium));
-            } else if (state.status case APIStatus.unknown) {
-              return const Center(
-                  child: Center(child: CircularProgressIndicator()));
-            } else {
-              return const Center(child: Text('empty'));
-            }
-          },
-        );
-  }
-}
-
-
-class LocalFilmsCheck extends StatelessWidget { // todo converted not a prob
-  const LocalFilmsCheck({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<LocalFilmBloc, LocalFilmState>(
+      //todo redo
       builder: (context, state) {
-        if (state is FilmLoadedState){
+        if (state.status case APIStatus.filmDetailsLoaded) {
+          BlocProvider.of<LocalFilmBloc>(context)
+              .add(SaveDataEvent(state.filmDetails));
           return FilmDetailsWidget(
-              maskingGradient: maskingGradient(), film: state.filmDetails);
+              maskingGradient: _maskingGradient, film: state.filmDetails);
         }
-        if(state is FileExistState && state.exist == true){
-          context.read<LocalFilmBloc>().add(LoadDataEvent());
-          return const SplashPage();
+        if (state.status case APIStatus.loadingFilmDetails) {
+          return const Center(child: CircularProgressIndicator());
         }
-        if(state is FileExistState && state.exist == false){
-          return DetailsMain(maskingGradient: maskingGradient());
+        if (state.status case APIStatus.error) {
+          return Center(
+              child: Text('Error',
+                  style: Theme.of(context).textTheme.titleMedium));
         }
-        if (state is FilmLoadedState){
-          return FilmDetailsWidget(
-              maskingGradient: maskingGradient(), film: state.filmDetails);
+        if (state.status case APIStatus.popularFilmsLoaded) {
+          // BlocProvider.of<FilmBloc>(context).add(FilmsStatusChanged.withId(APIStatus.loadingFilmDetails, filmId));
+          return const Center(
+              child: Center(child: CircularProgressIndicator()));
+        } else {
+          return const Center(child: CircularProgressIndicator());
         }
-        //todo error view
-          return Text('Local storage Error ☹',style: Theme.of(context).textTheme.displayLarge,);
-      }
+      },
     );
   }
 }
@@ -158,6 +158,7 @@ class FilmDetailsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: const CustomAppbar(),
       body: SingleChildScrollView(
         child: Center(
           child: Column(
@@ -166,48 +167,15 @@ class FilmDetailsWidget extends StatelessWidget {
             children: [
               TopFilmDetailsImage(
                   maskingGradient: _maskingGradient,
-                  filmBackgroundImg: film!.backdropPath!),
+                  filmBackgroundImg: film!.backdropPath),
               FilmDetailsInfo(film: film),
               CreditsSection(
                 credits: film!.credits,
               ),
-              FeedbackButtons(),
+              FeedbackButtons(film: film ?? const Film.empty()),
               ListFilmDetailsPages(similar: film!.similar),
             ],
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color.fromARGB(182, 210, 202, 80),
-        //todo
-        foregroundColor: const Color.fromARGB(255, 5, 9, 55),
-        elevation: 1,
-        child: const Icon(Icons.arrow_back_outlined),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
-    );
-  }
-}
-
-class CollectPersonalInfoPage extends StatelessWidget {
-  const CollectPersonalInfoPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTextStyle(
-      style: Theme.of(context).textTheme.headlineMedium!,
-      child: GestureDetector(
-        onTap: () {
-          // This moves from the personal info page to the credentials page,
-          // replacing this page with that one.
-          Navigator.of(context)
-              .pushReplacementNamed('signup/choose_credentials');
-        },
-        child: Container(
-          color: Colors.lightBlue,
-          alignment: Alignment.center,
-          child: const Text('Collect Personal Info Page'),
         ),
       ),
     );
@@ -235,37 +203,42 @@ class ListFilmDetailsPages extends StatelessWidget {
         ),
         SizedBox(
           height: 230,
-          child: /*NotificationListener<ScrollNotification>(
-            onNotification: (scrollNotification) {
-              if (scrollNotification is UserScrollNotification) {
-                ViewModel.getFilmDetailsPagesPoster(appState.generateRandomFilmDetailsPage())
-                    .then((value) {
-                  if (value.isNotEmpty) {
-                    appState.addPosters(value);
-                  }
-                });
-              }
-              return true;
-            },
-            child: */
-              ListView(
+          child: ListView.builder(
+            itemCount: _similar.length,
+            //controller: ,
             padding:
                 const EdgeInsets.only(right: 8, top: 17, bottom: 20, left: 8),
             // itemCount: 1,
             scrollDirection: Axis.horizontal,
-            children: [
-              for (var film in _similar)
-                Padding(
+            itemBuilder: (BuildContext context, int index) {
+              return GestureDetector(
+                onTap: () {
+                  Navigator.popAndPushNamed(
+                    context,
+                    '/filmdetails',
+                    arguments: _similar[index].id,
+                  );
+                },
+                child: Padding(
                     padding: const EdgeInsets.only(right: 13.0),
                     child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10.0),
-                        child: Image.network(
-                          film.posterPath ?? defaultImage,
+                      borderRadius: BorderRadius.circular(10.0),
+                      child: CachedNetworkImage(
+                        fit: BoxFit.fill,
+                        imageUrl: _similar[index].posterPath,
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) => Icon(Icons.error),
+                      ),
+                      /*Image.network(
+                          _similar[index].posterPath ?? defaultImage,
                           //height: 200,
                           //width: 100,
                           fit: BoxFit.fill,
-                        ))),
-            ],
+                        )*/
+                    )),
+              );
+            },
           ),
           //),
         ),
@@ -275,93 +248,143 @@ class ListFilmDetailsPages extends StatelessWidget {
 }
 
 class FeedbackButtons extends StatelessWidget {
-  const FeedbackButtons({
-    super.key,
-  });
+  const FeedbackButtons({super.key, required this.film});
+
+  final Film film;
 
   @override
   Widget build(BuildContext context) {
     const pad = 6.0;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 5.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          TextButton(
-            onPressed: () {},
-            style: ButtonStyle(
-              foregroundColor: MaterialStateProperty.resolveWith(
-                  (states) => const Color.fromARGB(255, 114, 114, 114)),
-              // iconColor: MaterialStateProperty.resolveWith((states) => const Color.fromARGB(255, 114, 114, 114)),
-              backgroundColor: MaterialStateProperty.resolveWith(
-                  (states) => Colors.transparent),
-              textStyle: MaterialStateProperty.resolveWith(
-                (states) => const TextStyle(
-                  fontWeight: FontWeight.w400,
+    return BlocBuilder<UserListBloc, UserListState>(
+      builder: (context, state) {
+        List<Film> favouriteFilms = BlocProvider.of<UserListBloc>(context).likedFilms;
+        List<Film> filmsToWatch = BlocProvider.of<UserListBloc>(context).filmsToWatch;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 5.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextButton(
+                onPressed: () {
+                  filmsToWatch != null
+                      ? filmsToWatch
+                              .where((element) => element.id == film.id)
+                              .isEmpty
+                          ? context
+                              .read<UserListBloc>()
+                              .add(AddToWatchFilm(film))
+                          : context
+                              .read<UserListBloc>()
+                              .add(RemoveFromWatchFilm(film))
+                      : showYouHaveNoAccountDialog(
+                          context: context,
+                          text: "Create account to get full access.",
+                          header: "You are not sign in :(");
+                },
+                style: ButtonStyle(
+                  foregroundColor: MaterialStateProperty.resolveWith(
+                      (states) => const Color.fromARGB(255, 114, 114, 114)),
+                  // iconColor: MaterialStateProperty.resolveWith((states) => const Color.fromARGB(255, 114, 114, 114)),
+                  backgroundColor: MaterialStateProperty.resolveWith(
+                      (states) => Colors.transparent),
+                  textStyle: MaterialStateProperty.resolveWith(
+                    (states) => const TextStyle(
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    filmsToWatch != null
+                        ? filmsToWatch
+                                .where((element) => element.id == film.id)
+                                .isNotEmpty
+                            ? const Icon(Icons.add_circle)
+                            : const Icon(Icons.add_circle_outline)
+                        : const Icon(Icons.add),
+                    const SizedBox(
+                      height: pad,
+                    ),
+                    Text("My List")
+                  ],
                 ),
               ),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.add),
-                SizedBox(
-                  height: pad,
+              TextButton(
+                onPressed: () {
+                  favouriteFilms != null
+                      ? favouriteFilms
+                              .where((element) => element.id == film.id)
+                              .isEmpty
+                          ? context.read<UserListBloc>().add(LikeFilm(film))
+                          : context.read<UserListBloc>().add(UnLikeFilm(film))
+                      : showYouHaveNoAccountDialog(
+                          context: context,
+                          text: "Create account to get full access.",
+                          header: "You are not sign in :(");
+                },
+                style: ButtonStyle(
+                  foregroundColor: MaterialStateProperty.resolveWith(
+                      (states) => const Color.fromARGB(255, 114, 114, 114)),
+                  // iconColor: MaterialStateProperty.resolveWith((states) => const Color.fromARGB(255, 114, 114, 114)),
+                  backgroundColor: MaterialStateProperty.resolveWith(
+                      (states) => Colors.transparent),
+                  textStyle: MaterialStateProperty.resolveWith(
+                    (states) => const TextStyle(
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                 ),
-                Text("My List")
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {},
-            style: ButtonStyle(
-              foregroundColor: MaterialStateProperty.resolveWith(
-                  (states) => const Color.fromARGB(255, 114, 114, 114)),
-              // iconColor: MaterialStateProperty.resolveWith((states) => const Color.fromARGB(255, 114, 114, 114)),
-              backgroundColor: MaterialStateProperty.resolveWith(
-                  (states) => Colors.transparent),
-              textStyle: MaterialStateProperty.resolveWith(
-                (states) => const TextStyle(
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.thumb_up),
-                SizedBox(
-                  height: pad,
-                ),
-                Text("Rate")
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {},
-            style: ButtonStyle(
-              foregroundColor: MaterialStateProperty.resolveWith(
-                  (states) => const Color.fromARGB(255, 114, 114, 114)),
-              // iconColor: MaterialStateProperty.resolveWith((states) => const Color.fromARGB(255, 114, 114, 114)),
-              backgroundColor: MaterialStateProperty.resolveWith(
-                  (states) => Colors.transparent),
-              textStyle: MaterialStateProperty.resolveWith(
-                (states) => const TextStyle(
-                  fontWeight: FontWeight.w400,
+                child: Column(
+                  children: [
+                    favouriteFilms != null
+                        ? favouriteFilms
+                                .where((element) => element.id == film.id)
+                                .isNotEmpty
+                            ? const Icon(Icons.thumb_up)
+                            : const Icon(Icons.thumb_up_alt_outlined)
+                        : const Icon(Icons.thumb_up),
+                    const SizedBox(
+                      height: pad,
+                    ),
+                    const Text("Like")
+                  ],
                 ),
               ),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.share),
-                SizedBox(
-                  height: pad,
+              TextButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: film.title!)).then((_) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            "Title: ${film.title!} copied to clipboard!")));
+                  });
+                },
+                style: ButtonStyle(
+                  foregroundColor: MaterialStateProperty.resolveWith(
+                      (states) => const Color.fromARGB(255, 114, 114, 114)),
+                  // iconColor: MaterialStateProperty.resolveWith((states) => const Color.fromARGB(255, 114, 114, 114)),
+                  backgroundColor: MaterialStateProperty.resolveWith(
+                      (states) => Colors.transparent),
+                  textStyle: MaterialStateProperty.resolveWith(
+                    (states) => const TextStyle(
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                 ),
-                Text("Share")
-              ],
-            ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.share),
+                    SizedBox(
+                      height: pad,
+                    ),
+                    Text("Share")
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -376,21 +399,26 @@ class CreditsSection extends StatelessWidget {
     return Padding(
         padding: const EdgeInsets.fromLTRB(8.0, 12, 8, 8),
         child: RichText(
+          softWrap: true,
           text: TextSpan(
             // text: "Cast: ",
             style: const TextStyle(
-                color: Colors.black, fontSize: 12, fontWeight: FontWeight.w300),
+                color: Colors.black,
+                fontSize: 12,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 0.5),
             children: [
               const TextSpan(
                   text: 'Cast: ', style: TextStyle(color: Colors.black38)),
               TextSpan(
-                text: _credits.cast.toString(),
+                text: _credits.cast.map((el) => el.name).join(",  "),
               ),
               const TextSpan(
                   text: '\nDirectors: ',
                   style: TextStyle(color: Colors.black38)),
               TextSpan(
-                  text: '${_credits.director}, ${_credits.coDirector ?? " "}'),
+                  text:
+                      '${_credits.director}, ${_credits.coDirector == 'N/A' ? " " : _credits.coDirector}'),
               const WidgetSpan(
                   child: Padding(
                 padding: EdgeInsets.only(bottom: 10.0, top: 16),
@@ -433,7 +461,7 @@ class FilmDetailsInfo extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10.0),
               child: Image.network(
-                _film.posterPath!,
+                _film.posterPath,
                 // height: 230,
                 width: MediaQuery.of(context).size.width / 3 - 11,
                 fit: BoxFit.fill,
@@ -456,10 +484,24 @@ class FilmDetailsInfo extends StatelessWidget {
                             color: Color.fromARGB(255, 120, 132, 192)),
                       ),
                       const TextSpan(
-                        text: '\u2981',
-                        style: TextStyle(color: Color.fromARGB(255, 120, 132, 192)),
+                        text: '  \u2981  ',
+                        style: TextStyle(
+                            color: Color.fromARGB(255, 120, 132, 192)),
                       ),
-                     /* for (int i =0; i<_film.genres!.length; i++)
+                      TextSpan(
+                          text: _film.genres
+                              .map((e) {
+                                if (_film.genres.length <= 3) {
+                                  return e.name;
+                                } else {
+                                  return "";
+                                }
+                              })
+                              .join("  ")
+                              .toString(),
+                          style: const TextStyle(
+                              color: Color.fromARGB(255, 120, 132, 192)))
+                      /* for (int i =0; i<_film.genres!.length; i++)
                         ...[
                           if(i<4)
                           TextSpan(
@@ -469,16 +511,20 @@ class FilmDetailsInfo extends StatelessWidget {
                     ],
                   ),
                 )),
-            Text(
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-              _film.title!,
-              style: const TextStyle(
-                  fontStyle: FontStyle.normal,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w400,
-                  wordSpacing: 1,
-                  letterSpacing: 1),
+            Container(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width - 166),
+              child: Text(
+                //textAlign: TextAlign.justify,
+                softWrap: true,
+                _film.title!,
+                style: const TextStyle(
+                    fontStyle: FontStyle.normal,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w400,
+                    wordSpacing: 1,
+                    letterSpacing: 1),
+              ),
             ),
             StarRating(
               rating: _film.voteAverage ?? 0, //todo 10 bal range
@@ -488,7 +534,7 @@ class FilmDetailsInfo extends StatelessWidget {
               //width: 300,
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width - 166),
-              padding: const EdgeInsets.only(top: 15, left: 10, right: 10),
+              padding: const EdgeInsets.only(top: 10, left: 10, right: 10),
               child: RichText(
                   textAlign: TextAlign.justify,
                   softWrap: true,
@@ -563,7 +609,8 @@ class StarRating extends StatelessWidget {
 
   // final RatingChangeCallback onRatingChanged;
 
-  StarRating({
+  const StarRating({
+    super.key,
     this.starCount = 5,
     this.rating = .0,
     /* required this.onRatingChanged,*/
@@ -572,12 +619,12 @@ class StarRating extends StatelessWidget {
   Widget buildStar(BuildContext context, int index) {
     Icon icon;
 
-    if (index >= rating) {
+    if (index > rating / 2) {
       icon = const Icon(
         Icons.star_border,
         color: Color.fromARGB(255, 255, 190, 29),
       );
-    } else if (index > rating - 1 && index < rating) {
+    } else if (index > rating / 2 - 1 && index < rating / 2) {
       icon = const Icon(
         Icons.star_half,
         color: Color.fromARGB(255, 255, 190, 29),
@@ -588,16 +635,28 @@ class StarRating extends StatelessWidget {
         color: Color.fromARGB(255, 255, 190, 29),
       );
     }
-    return GestureDetector(
+    if (index == 5) {
+      return Padding(
+        padding: const EdgeInsets.only(left: 8.0),
+        child: Text(
+          "$rating",
+          style: const TextStyle(color: Color.fromARGB(255, 100, 68, 8)),
+        ),
+      );
+    } else {
+      return icon;
+    }
+    /*return GestureDetector(
       onTap: () => (index + 1.0),
       child: icon,
-    );
+    );*/
   }
 
   @override
   Widget build(BuildContext context) {
     return Row(
-        children:
-            List.generate(starCount, (index) => buildStar(context, index)));
+      children:
+          List.generate(starCount + 1, (index) => buildStar(context, index)),
+    );
   }
 }

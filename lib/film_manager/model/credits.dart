@@ -39,10 +39,25 @@ class Credits extends Equatable {
       director: List.from(json['crew']).firstWhere((x) =>  x['job'] == 'Director', orElse: () => {'name': null})['name'],
       );
       }
+    else{
+      return Credits(
+        cast: List.from(json['cast']).map((entry) => Cast.fromJson(entry)).toList(),
+        coDirector: json['director'] ?? "",
+        director: json['co_director'] ?? "",
+      );
+    }
       return Credits.empty();
     }
 
-    /*
+  Map<String, dynamic> toJson() {
+    return {
+      'cast': cast.map((e) => e.toJson()).toList(),
+      'director': director,
+      'co_director': coDirector,
+    };
+  }
+  
+/*
     String director = List.from(this['crew']).firstWhere((x) =>  x['job'] == 'Director')['name'] ??  'N/A';
     String coDirector = List.from(this['crew']).firstWhere((x) =>  x['job'] == 'Co-Director')['name'] ??  'N/A';
     return Credits(

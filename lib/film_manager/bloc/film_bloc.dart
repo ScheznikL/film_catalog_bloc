@@ -51,7 +51,7 @@ class FilmBloc extends Bloc<FilmEvent, FilmState> {
     );
   }
   */
-  int _page = 0;
+ int _page = 0;
 
   Future<void> _onFilmsStatusChanged(
       FilmsStatusChanged event,
@@ -69,8 +69,8 @@ class FilmBloc extends Bloc<FilmEvent, FilmState> {
         final popularFilms = await _tryGetPopularFilms(page: _page);
         return emit(
           popularFilms != null
-              ? state.copyWith(popularFilms: popularFilms,status: APIStatus.popularFilmsLoaded)
-              : state.copyWith(status: APIStatus.unknown,popularFilms: []) ,
+              ? state.copyWith(popularFilms: popularFilms, status: APIStatus.popularFilmsLoaded)
+              : state.copyWith(status: APIStatus.unknown, popularFilms: []),
         );
       case APIStatus.unknown:
         state.copyWith(status: APIStatus.unknown);

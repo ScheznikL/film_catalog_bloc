@@ -9,8 +9,8 @@ class Film extends Equatable {
   final double? popularity;
   final double? voteAverage;
   final int? voteCount;
-  final String? posterPath;
-  final String? backdropPath;
+  final String posterPath;
+  final String backdropPath;
   final DateTime? releaseDate;
   final String? overview;
   final List<dynamic>? genreIds;
@@ -45,21 +45,18 @@ class Film extends Equatable {
         popularity = json['popularity'],
         voteAverage = double.parse(json['vote_average'].toStringAsFixed(1)),
         voteCount = json['vote_count'],
-        posterPath = "http://image.tmdb.org/t/p/w500//${json['poster_path']}",
+        posterPath = "http://image.tmdb.org/t/p/w500//${json['poster_path'] ?? ""}",
         backdropPath =
         "http://image.tmdb.org/t/p/w500//${json['backdrop_path']}",
         releaseDate = DateTime.parse(json['release_date']),
         overview = json['overview'],
-        genreIds = json['genre_ids'],
+        genreIds = json['genre_ids'] ?? List<int>.empty(),
         adult = json['adult'],
         video = json['video'];
 
 
-  List<Film> postFromJson(String str) =>
-      List<Film>.from(json.decode(str).map((x) => Film.fromJson(x)));
-
-  String postToJson(List<Film> data) =>
-      json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+  String postToJson(Film data) =>
+      json.encode(data);
 
   Map<String, dynamic> toJson() =>
       {
@@ -72,7 +69,7 @@ class Film extends Equatable {
         'vote_count': voteCount,
         'poster_path': posterPath,
         'backdrop_path': backdropPath,
-        'release_date': releaseDate,
+        'release_date': releaseDate.toString(),
         'overview': overview,
         'genre_ids': genreIds,
         'adult': adult,

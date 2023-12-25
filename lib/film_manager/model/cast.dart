@@ -31,4 +31,14 @@ class Cast extends Equatable {
       character: json['character'] ?? "",
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'profilePath': profilePath,
+      'character': character,
+    };
+  }
+
+
 }

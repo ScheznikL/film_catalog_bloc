@@ -39,8 +39,10 @@ class FilmSavedState extends LocalFilmState {
 
 class LoadSaveErrorState extends LocalFilmState {
 
+  final String message;
+
   @override
   List<Object?> get props =>[];
 
-  const LoadSaveErrorState();
+  const LoadSaveErrorState(this.message);
 }

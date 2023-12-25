@@ -1,34 +1,33 @@
 import 'package:film_catalog_bloc/film_manager/bloc/film_bloc.dart';
 import 'package:film_catalog_bloc/repositories/api_repository/film_api.dart';
+import 'package:film_catalog_bloc/splash/splash.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/scheduler/binding.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../login/view/auth_page.dart';
 import '../../film_manager/model/film.dart';
+import '../../widgets/appbar.dart';
 import '../../widgets/user_drawer_header.dart';
+import '../bloc/popular_films_bloc.dart';
+
+enum DrawerSelection { main, cabinet, likes, list, ratings }
 
 class InitialPage extends StatefulWidget {
   const InitialPage({
-    this.popularFilms,
+    //this.popularFilms,
     super.key,
   });
 
-  final List<Film>? popularFilms;
-
-  static Route<void> route() {
-    return MaterialPageRoute<void>(builder: (_) => const InitialPage());
-  }
-
   @override
-  State<InitialPage> createState() => _InitialPageState(popularFilms);
+  State<InitialPage> createState() => _InitialPageState();
 }
 
 class _InitialPageState extends State<InitialPage> {
-  _InitialPageState(this.popularFilms);
+  _InitialPageState();
 
   var currentPage = DrawerSelection.main;
-  final List<Film>? popularFilms;
+  // final List<Film>? popularFilms;
 
   @override
   void initState() {
@@ -37,36 +36,26 @@ class _InitialPageState extends State<InitialPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      /* drawer: Drawer(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              UserHeader(),
-              UserDrawerList(),
-            ],
-          ),
-        ),
-      ),*/
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text("Popular Films"),
-      ),
-      body: Column(
-        children: [
-          /* Expanded(
+    var filmBloc = BlocProvider.of<FilmBloc>(context);
+    return BlocProvider(
+      create: (context) =>
+          PopularFilmsBloc(filmsBloc: filmBloc)..add(FilmFetched()),
+      child: const Scaffold(
+        appBar: CustomAppbar(),
+        body: Column(
+          children: [
+            /* Expanded(
             flex: 1,
             child: Container(
               child: Placeholder(), // todo add buttons
             ),
           ),*/
-          Expanded(
-            flex: 10,
-            child: FilmsBuilder(popularFilms: popularFilms),
-          ),
-        ],
+            Expanded(
+              flex: 10,
+              child: FilmsBuilder(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -123,68 +112,146 @@ class _InitialPageState extends State<InitialPage> {
   }
 }
 
-enum DrawerSelection { main, cabinet, likes, list, ratings }
 
-class FilmsBuilder extends StatelessWidget {
+class FilmsBuilder extends StatefulWidget {
   const FilmsBuilder({
     super.key,
-    required this.popularFilms,
+    //   required this.popularFilms,
   });
 
-  final List<Film>? popularFilms;
+  @override
+  State<FilmsBuilder> createState() => _FilmsBuilderState();
+}
+
+class _FilmsBuilderState extends State<FilmsBuilder> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FilmBloc, FilmState>(builder: (context, state) {
+    return BlocBuilder<PopularFilmsBloc, PopularFilmsState>(
+        builder: (context, state) {
       return GridView.builder(
+          controller: _scrollController,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             mainAxisExtent: 380,
             // childAspectRatio: 1,
-            mainAxisSpacing: 4,
+            // mainAxisSpacing: 1,
             crossAxisSpacing: 4,
             crossAxisCount: 2,
           ),
-          itemCount: 20,
+          itemCount: state.films.length,
           itemBuilder: (BuildContext context, int index) {
-            return GestureDetector(
-              onTap: () {
-                //todo FilmDetail
-
-                Navigator.pushNamed(
-                  context,
-                  '/filmdetails',
-                  arguments: popularFilms![index].id,
-                );
-              },
-              child: Column(
-                children: [
-                  Padding(
-                      padding: const EdgeInsets.only(right: 13.0, left: 13),
-                      child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10.0),
-                          child: Image.network(
-                            popularFilms![index].posterPath ?? "",
-                            fit: BoxFit.fill,
-                          ))),
-                  Text(
-                    '${popularFilms![index].title}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                  ),
-                  Text(
-                    'Rating: ${popularFilms![index].voteCount}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          fontSize: 14,
-                        ),
-                  ),
-                ],
-              ),
+            return _GridItemFromBlocs(
+              index: index,
+              state: state,
             );
           });
     });
+  }
+
+  void _onScroll() {
+    if (_isBottom) context.read<PopularFilmsBloc>().add(FilmFetched());
+  }
+
+  bool get _isBottom {
+    if (_scrollController.position.atEdge) {
+      if (_scrollController.position.pixels != 0) {
+        return true;
+      }
+    }
+    return false;
+    if (!_scrollController.hasClients) return false;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    return currentScroll >= (maxScroll * 0.9);
+  }
+}
+
+class _GridItemFromBlocs extends StatelessWidget {
+  const _GridItemFromBlocs({required this.state, required this.index});
+
+  final PopularFilmsState state;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (state.status) {
+      case PopularFilmsStatus.failure:
+        return const Center(child: Text('failed to fetch'));
+      case PopularFilmsStatus.success:
+        if (state.films.isEmpty) {
+          return const Center(child: Text('fetching error'));
+        }
+        return PopularFilmContent(
+          popularFilm: state.films[index],
+        );
+      case PopularFilmsStatus.initial:
+        return PopularFilmContent(
+          popularFilm: state.films[index],
+        );
+    }
+  }
+}
+
+class PopularFilmContent extends StatelessWidget {
+  const PopularFilmContent({
+    super.key,
+    required this.popularFilm,
+  });
+
+  final Film popularFilm;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/filmdetails',
+          arguments: popularFilm.id,
+        );
+      },
+      child: Column(
+        children: [
+          Padding(
+              padding: const EdgeInsets.only(right: 13.0, left: 13, top: 10),
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10.0),
+                  child: Image.network(
+                    popularFilm.posterPath ?? "",
+                    fit: BoxFit.fill,
+                  ))),
+          Text(
+            '${popularFilm.title}',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+          ),
+          Text(
+            'Rating: ${popularFilm.voteCount}',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  fontSize: 14,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }

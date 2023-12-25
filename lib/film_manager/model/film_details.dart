@@ -5,27 +5,13 @@ import 'genre_model.dart';
 import 'credits.dart';
 
 class FilmDetails extends Film {
-// final int id;
-  // final String backdropPath;
-  final List<GenreModel>? genres;
-/*  final String overview;
-  final double? popularity;
-  final String posterPath;*/
+  final List<GenreModel> genres;
   final List<ProductCompany> productCompanies;
-  // final DateTime releaseDate;
   final int revenue;
   final int runtime;
-  /* final String title;
-  final double voteAverage;
-  final int voteCount;*/
-
-  // final String? trailerVideo;
   final Credits credits;
   final List<Film> similar;
-
-  // final bool adult;
   final int budget;
-  // final String? originalTitle;
   final String? originalLanguage;
 
 //<editor-fold desc="Data Methods">
@@ -77,42 +63,16 @@ class FilmDetails extends Film {
           originalTitle == other.originalTitle &&
           originalLanguage == other.originalLanguage);
 
-
-  const FilmDetails.empty():
-      genres = const [],
-      productCompanies = const  [],
-      revenue = 0,
-      runtime =0 ,
-      credits = const Credits.empty(),
-      similar = const [],
-      budget = 0,
-      originalLanguage ='',
-      super.empty();
-
-
-  /*
-  @override
-  int get hashCode =>
-      id.hashCode ^
-      backdropPath.hashCode ^
-      genres.hashCode ^
-      overview.hashCode ^
-      popularity.hashCode ^
-      posterPath.hashCode ^
-      productCompanies.hashCode ^
-      releaseDate.hashCode ^
-      revenue.hashCode ^
-      runtime.hashCode ^
-      title.hashCode ^
-      voteAverage.hashCode ^
-      voteCount.hashCode ^
-      credits.hashCode ^
-      similar.hashCode ^
-      adult.hashCode ^
-      budget.hashCode ^
-      originalTitle.hashCode ^
-      originalLanguage.hashCode;
-*/
+  const FilmDetails.empty()
+      : genres = const [],
+        productCompanies = const [],
+        revenue = 0,
+        runtime = 0,
+        credits = const Credits.empty(),
+        similar = const [],
+        budget = 0,
+        originalLanguage = '',
+        super.empty();
 
   FilmDetails copyWith({
     int? id,
@@ -157,60 +117,40 @@ class FilmDetails extends Film {
       originalLanguage: originalLanguage ?? this.originalLanguage,
     );
   }
+
 // var ttt =  ProductCompany.fromJson(jsonData['production_companies'][0] as Map<String,dynamic>);
-  FilmDetails.fromJson(Map<String, dynamic> json):
-      genres = List.from(json['genres'])
-          .map((entry) => GenreModel.fromJson(entry))
-          .toList(),
-      productCompanies = (json['production_companies'] as List<dynamic>).map((entry) {
-        return ProductCompany.fromJson(entry);
-      }).toList(),
-      revenue = json['revenue'],
-      runtime = json['runtime'],
-      credits = Credits.fromJson(json['credits']),
-      similar = List.from(json['similar']["results"]).map((js) => Film.fromJson(js)).toList(),
-      budget = json['budget'],
-      originalLanguage = json['original_language'],
-      super.fromJson(json);
+  FilmDetails.fromJson(Map<String, dynamic> json)
+      : genres = List.of(json['genres']).map((entry) {
+          //var ttt =  List.of(json['genres']);
+          return GenreModel.fromJson(entry);
+        }).toList(),
+        productCompanies =
+            List.of(json['production_companies'] ?? List.empty()).map((entry) {
+          return ProductCompany.fromJson(entry);
+        }).toList(),
+        revenue = json['revenue'],
+        runtime = json['runtime'],
+        credits = Credits.fromJson(json['credits']),
+        similar = List.from(json['similar']["results"])
+            .map((js) => Film.fromJson(js))
+            .toList(),
+        budget = json['budget'],
+        originalLanguage = json['original_language'],
+        super.fromJson(json);
 
-}
-
-
-extension GetProperList on Map {
-  List<Film> getSimilar() {
-    List<Film> similar = [];
-    if (containsKey('results')) {
-      for (dynamic f in this['results']) {
-        if (f != null) {
-          similar.add(Film.fromJson(f));
-        } else {
-          continue;
-        }
-      }
-    }
-    return similar;
+  @override
+  Map<String, dynamic> toJson() {
+    final json = super.toJson();
+    json.addAll({
+      'genres': genres?.map((e) => e.toJson()).toList(),
+      'production_companies': productCompanies,
+      'revenue': revenue,
+      'runtime': runtime,
+      'credits': credits,
+      'similar': {"results": similar.map((e) => e.toJson()).toList()},
+      'budget': budget,
+      'original_language': originalLanguage,
+    });
+    return json;
   }
-
-
-}
-
-extension GetGenreForList on List<dynamic>{
-
-  List<GenreModel> getGenres() {
-    var l = this;/**************/
-
-    List<GenreModel> genres = [];
-    for (dynamic f in this) {
-      if (f != null) {
-        genres.add(GenreModel.fromJson(f));
-      } else {
-        continue;
-      }
-    }
-    return genres;
-  }
-}
-
-extension GetProperListOfCredits on Map {
-
 }

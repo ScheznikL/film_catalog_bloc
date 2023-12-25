@@ -21,8 +21,9 @@ class FilmState extends Equatable{
     List<Film>? popularFilms,
     FilmDetails? filmDetails
   }) {
-    return FilmState(
-      popularFilms: popularFilms ?? this.popularFilms,
+    List<Film> tempList = List.of(this.popularFilms)..addAll(popularFilms?.where((element) => !this.popularFilms.contains(element)) ?? List.empty());
+      return FilmState(
+      popularFilms: tempList,
       status: status ?? this.status,
       filmDetails: filmDetails ?? this.filmDetails,
     );

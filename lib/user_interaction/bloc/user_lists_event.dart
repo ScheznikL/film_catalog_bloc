@@ -1,4 +1,4 @@
-part of 'film_details_bloc.dart';
+part of 'user_lists_bloc.dart';
 
 abstract class UserListEvent extends Equatable {
   const UserListEvent();
@@ -6,6 +6,15 @@ abstract class UserListEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+
+class UserListsSave extends UserListEvent {
+}
+
+/*
+class UserListsInit extends UserListEvent {
+  const UserListsInit();
+}
+*/
 
 class LikeFilm extends UserListEvent {
   final Film likedFilm;
@@ -35,10 +44,10 @@ class AddToWatchFilm extends UserListEvent {
 }
 
 class RemoveFromWatchFilm extends UserListEvent {
-  final Film removedFormWatch;
+  final Film removedFromWatch;
 
-  const RemoveFromWatchFilm(this.removedFormWatch);
+  const RemoveFromWatchFilm(this.removedFromWatch);
 
   @override
-  List<Object> get props => [removedFormWatch];
+  List<Object> get props => [removedFromWatch];
 }
