@@ -59,7 +59,7 @@ class _InitialPageState extends State<InitialPage> {
       ),
     );
   }
-
+/*
   Widget UserDrawerList() {
     return Container(
         padding: EdgeInsets.only(top: 15),
@@ -75,7 +75,7 @@ class _InitialPageState extends State<InitialPage> {
                 currentPage == DrawerSelection.main ? true : false),
           ],
         ));
-  }
+  }*/
 
   Widget menuItem(int id, String title, IconData icon, bool selected) {
     return Material(

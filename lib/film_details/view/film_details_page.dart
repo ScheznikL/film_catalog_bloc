@@ -86,7 +86,6 @@ class LocalFilmsCheck extends StatelessWidget {
         return FilmDetailsWidget(
             maskingGradient: maskingGradient(), film: state.filmDetails);
       }
-      //todo error view
       if (state is LoadSaveErrorState) {
         return Center(
           child: Text(

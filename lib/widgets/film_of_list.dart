@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../film_manager/model/film.dart';
 
-
 class UserListTile extends StatelessWidget {
   const UserListTile({
     super.key,
@@ -14,7 +13,6 @@ class UserListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final textTheme = Theme.of(context).textTheme;
     return InkWell(
       onTap: () {
@@ -26,7 +24,7 @@ class UserListTile extends StatelessWidget {
       },
       child: Container(
         padding: EdgeInsets.all(4),
-        color:Theme.of(context).primaryColor,
+        color: Theme.of(context).focusColor,
         height: 140,
         child: Row(
           children: [
@@ -52,13 +50,14 @@ class UserListTile extends StatelessWidget {
                       Row(
                         children: [
                           const Icon(Icons.star,
-                              color:  Color.fromARGB(255, 255, 190, 29), size: 14),
+                              color: Color.fromARGB(255, 255, 190, 29),
+                              size: 14),
                           SizedBox(width: 4),
                           Text(film.voteAverage.toString(),
                               style: textTheme.bodyLarge),
                           SizedBox(width: 10),
                           Text(
-                            film.releaseDate.toString(),
+                            " ${film.releaseDate?.day.toString()}.${film.releaseDate?.month.toString()}.${film.releaseDate?.year.toString()}",
                             style: textTheme.titleSmall,
                           ),
                         ],

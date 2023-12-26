@@ -200,7 +200,7 @@ class _PopularFilmsState extends State<_PopularFilms> {
   Widget build(BuildContext context) {
     return BlocBuilder<FilmBloc, FilmState>(builder: (context, state) {
       if (state.status case APIStatus.loadingPopularFilms) {
-        return const Center(child: CircularProgressIndicator());
+        return const Center(child: SplashLoad());
       } else if (state.status case APIStatus.popularFilmsLoaded) {
         return InitialPage(/**/);
       } else if (state.status case APIStatus.error) {
@@ -216,7 +216,7 @@ class _PopularFilmsState extends State<_PopularFilms> {
       } else if (state.status case APIStatus.loadingFilmDetails) {
         return const Center(child: Text('Error'));
       }
-      return const Center(child: CircularProgressIndicator());
+      return InitialPage(/**/);/*const Center(child: CircularProgressIndicator());*/
     });
   }
 }

@@ -27,7 +27,7 @@ class UserCabinetPage extends StatelessWidget {
               children: [
                 const SizedBox(height: 25),
                 ProfilePageUserProfile(),
-                const SizedBox(height: 40),
+
                 /* const ProfilePageLists(),
                 const SizedBox(height: 40),
                 const ProfilePageSettings(),
@@ -48,16 +48,34 @@ class ProfilePageUserProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Film> favouriteFilms = BlocProvider.of<UserListBloc>(context).likedFilms;
-    List<Film> filmsToWatch = BlocProvider.of<UserListBloc>(context).filmsToWatch;
+    List<Film> favouriteFilms =
+        BlocProvider.of<UserListBloc>(context).likedFilms;
+    List<Film> filmsToWatch =
+        BlocProvider.of<UserListBloc>(context).filmsToWatch;
 
-    return Center(
-      child: Stack(
+    return SingleChildScrollView(
+      child: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                    color: Theme.of(context).focusColor,
+                    padding: const EdgeInsets.all(15),
+                    child: const Center(child: Icon(Icons.person))),
+                Container(
+                    color: Theme.of(context).focusColor,
+                    padding: const EdgeInsets.all(15),
+                    child: const Center(
+                  child: Icon(Icons.logout),
+                ))
+              ],
+            ),
+          ),
           Container(
-            height: 530,
-            margin: const EdgeInsets.only(top: 64),
-            padding: const EdgeInsets.only(top: 70),
+            padding: const EdgeInsets.only(top: 50),
             width: MediaQuery.of(context).size.width,
             decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
@@ -72,28 +90,28 @@ class ProfilePageUserProfile extends StatelessWidget {
                           fontWeight: FontWeight.bold, fontSize: 24),
                     ),
                     const SizedBox(height: 4),
-                    Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 5),
-                          child: ListHorizontalFilmTile(films: favouriteFilms),
-                        ),
-                        Divider(),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 5),
-                          child: ListHorizontalFilmTile(films: filmsToWatch),
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 5),
+                      child: ListHorizontalFilmTile(
+                          films: favouriteFilms, title: 'Liked Films'),
                     ),
-
+                    Divider(height: 20),
+                    SizedBox(
+                      height: 15,
+                    ),
+                    Divider(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 5),
+                      child: ListHorizontalFilmTile(
+                          films: filmsToWatch, title: 'You Films List'),
+                    ),
                   ],
                 );
               },
             ),
           ),
-       Center(child: Icon(Icons.person)),
         ],
       ),
     );
@@ -104,19 +122,21 @@ class ListHorizontalFilmTile extends StatelessWidget {
   const ListHorizontalFilmTile({
     super.key,
     required this.films,
+    required this.title,
   });
 
   final List<Film> films;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(left: 8.0),
           child: Text(
-            'Liked Films',
+            title,
             style: TextStyle(color: Colors.black38),
           ),
         ),
@@ -126,7 +146,7 @@ class ListHorizontalFilmTile extends StatelessWidget {
             itemCount: films.length,
             //controller: ,
             padding:
-            const EdgeInsets.only(right: 8, top: 17, bottom: 20, left: 8),
+                const EdgeInsets.only(right: 8, top: 17, bottom: 20, left: 8),
             // itemCount: 1,
             scrollDirection: Axis.horizontal,
             itemBuilder: (BuildContext context, int index) {
