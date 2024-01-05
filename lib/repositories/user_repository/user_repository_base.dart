@@ -13,26 +13,27 @@ class UserRepository {
 
   Future<UserData?> getUserData(User user) async {
     _user = user;
-    final file = await _getLocalFile(user.login);
-    final fileLength = await file.length();
-    if (fileLength > 0) {
-      String? fileContent = await file.readAsString();
-      Map<String, dynamic>? json =
-          jsonDecode(fileContent) as Map<String, dynamic>?;
-
-      return json != null ? UserData.fromJson(json) : UserData.empty;
-    } else {
-      return UserData.empty;
+    try {
+      final file = await _getLocalFile(user.login);
+      final fileLength = await file.length();
+      if (fileLength > 0) {
+        return _readFile(file);
+      } else {
+        return UserData.empty;
+      }
+    } catch (e) {
+      return null;
     }
   }
 
   void clearUser() => _user = null;
 
   Future<UserData> initUserData(User user) async {
+    _user = user;
     //if (_user == null) return null;
     try {
       final file = await _getLocalFile(user.login);
-      final fileLength = await file.create();
+      await file.create();
 
       return UserData.empty;
     } catch (e) {
@@ -48,14 +49,28 @@ class UserRepository {
 
   Future<bool> saveUserData(UserData userData) async {
     try {
-      _user != null;
+      // _user != null;
       final file = await _getLocalFile(_user!.login);
 
-      var jsonData = userData.toJson();
-      await file.writeAsString(jsonEncode(jsonData), mode: FileMode.append);
-      return true;
+      var fileLength = await file.length();
+
+      if (fileLength > 0) {
+        var fileContent = await _readFile(file);
+        fileContent.toWatch.addAll(userData.toWatch);
+        fileContent.liked.addAll(userData.liked);
+        var jsonData = userData.toJson();
+        await file.writeAsString(jsonEncode(jsonData));
+        return true;
+      } else {
+        var jsonData = userData.toJson();
+        await file.writeAsString(jsonEncode(jsonData));
+        return true;
+      }
     } catch (e) {
-      return false;
+      if (e is FileSystemException) {
+        return false;
+      }
+      return true;
     }
   }
 
@@ -75,5 +90,12 @@ class UserRepository {
   Future<File> _getLocalFile(String email) async {
     final directory = await getApplicationDocumentsDirectory();
     return File('${directory.path}/user_info_$email.json');
+  }
+
+  Future<UserData> _readFile(File file) async {
+    String? fileContent = await file.readAsString();
+    Map<String, dynamic>? json = jsonDecode(fileContent);
+
+    return json != null ? UserData.fromJson(json) : UserData.empty;
   }
 }

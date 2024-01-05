@@ -17,23 +17,23 @@ class Film extends Equatable {
   final bool? adult;
   final bool? video;
 
-
-  const Film({this.id,
-    this.title,
-    this.originalTitle,
-    this.language,
-    this.popularity,
-    this.voteAverage,
-    this.voteCount,
-    String? posterPath,
-    String? backdropPath,
-    this.releaseDate,
-    this.overview,
-    this.genreIds,
-    this.adult,
-    this.video})
+  const Film(
+      {this.id,
+      this.title,
+      this.originalTitle,
+      this.language,
+      this.popularity,
+      this.voteAverage,
+      this.voteCount,
+      String? posterPath,
+      String? backdropPath,
+      this.releaseDate,
+      this.overview,
+      this.genreIds,
+      this.adult,
+      this.video})
       : posterPath = posterPath ??
-      "https://images.unsplash.com/photo-1536566482680-fca31930a0bd?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+            "https://images.unsplash.com/photo-1536566482680-fca31930a0bd?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         backdropPath = backdropPath ??
             "https://images.unsplash.com/photo-1536566482680-fca31930a0bd?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 
@@ -45,21 +45,24 @@ class Film extends Equatable {
         popularity = json['popularity'],
         voteAverage = double.parse(json['vote_average'].toStringAsFixed(1)),
         voteCount = json['vote_count'],
-        posterPath = "http://image.tmdb.org/t/p/w500//${json['poster_path'] ?? ""}",
+        posterPath =
+            "http://image.tmdb.org/t/p/w500//${json['poster_path'] ?? ""}",
         backdropPath =
-        "http://image.tmdb.org/t/p/w500//${json['backdrop_path']}",
-        releaseDate = DateTime.parse(json['release_date']),
+            "http://image.tmdb.org/t/p/w500//${json['backdrop_path']}", //1200
+        releaseDate =
+            json['release_date'] == "" ? DateTime(2023) :DateTime.parse(json['release_date']),
         overview = json['overview'],
         genreIds = json['genre_ids'] ?? List<int>.empty(),
         adult = json['adult'],
         video = json['video'];
 
+  DateTime _toDateTime(json) {
+    return DateTime.parse(json['release_date']);
+  }
 
-  String postToJson(Film data) =>
-      json.encode(data);
+  String postToJson(Film data) => json.encode(data);
 
-  Map<String, dynamic> toJson() =>
-      {
+  Map<String, dynamic> toJson() => {
         "id": id,
         "title": title,
         'original_title ': originalTitle,
@@ -77,8 +80,7 @@ class Film extends Equatable {
       };
 
   @override
-  List<Object?> get props =>
-      [
+  List<Object?> get props => [
         id,
         title,
         originalTitle,
@@ -95,19 +97,19 @@ class Film extends Equatable {
         video
       ];
 
-  const Film.empty(): id =1,
-      title = "none",
-      originalTitle ="none",
-      language ='',
-      popularity = 1,
-      voteAverage = 0.0,
-      voteCount = 0,
-      posterPath = '',
-      backdropPath = '',
-      releaseDate = null,
-      overview = '',
-      genreIds = const [],
-      adult = false,
-      video = false;
-
+  const Film.empty()
+      : id = 1,
+        title = "none",
+        originalTitle = "none",
+        language = '',
+        popularity = 1,
+        voteAverage = 0.0,
+        voteCount = 0,
+        posterPath = '',
+        backdropPath = '',
+        releaseDate = null,
+        overview = '',
+        genreIds = const [],
+        adult = false,
+        video = false;
 }

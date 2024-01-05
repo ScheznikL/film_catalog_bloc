@@ -51,3 +51,18 @@ class FilmRemovedWatch extends UserListState {
   @override
   List<Object> get props => [userWatch];
 }
+
+class ListsCleared extends UserListState {
+
+}
+
+class ListsObtained extends UserListState {
+  final List<Film> userWatch;
+  final List<Film> userLikes;
+
+  const ListsObtained({required this.userWatch, required this.userLikes})
+      : super(userWatch: userWatch, userLikes: userLikes);
+
+  @override
+  List<Object> get props => [userWatch, userLikes];
+}

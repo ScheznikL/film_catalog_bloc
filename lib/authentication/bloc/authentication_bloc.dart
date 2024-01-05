@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../repositories/authentication_repository/authentication_repository_base.dart';
 import '../../repositories/user_repository/models/user.dart';
@@ -29,6 +30,8 @@ class AuthenticationBloc
     );
   }
 
+  StreamSubscription<AuthenticationStatus>
+      get authenticationStatusSubscription => _authenticationStatusSubscription;
   final AuthenticationRepository _authenticationRepository;
   final UserRepository _userRepository;
   late StreamSubscription<AuthenticationStatus>
@@ -52,12 +55,12 @@ class AuthenticationBloc
         return emit(
           userData != null
               ? AuthenticationState.authenticated(event.status.user, userData)
-              :  const AuthenticationState.unauthenticated(),
+              :  const AuthenticationState.error("Error getting user data"),
         );
       case AuthenticationProgress.unknown:
         return emit( const AuthenticationState.unknown());
       case AuthenticationProgress.alreadyExist:
-        return emit( const AuthenticationState.userAlreadyExist());
+        return emit(AuthenticationState.userAlreadyExist(event.status.user));
       case AuthenticationProgress.error:
         return emit(AuthenticationState.error(event.status.message ?? ""));
       case AuthenticationProgress.noUserFound:
@@ -67,12 +70,10 @@ class AuthenticationBloc
         return emit(
           userData != null
               ? AuthenticationState.registered(event.status.user, userData)
-              :  const AuthenticationState.unauthenticated(),
+              :  const AuthenticationState.error("Registration error"),
         );
       case AuthenticationProgress.registered:
-        // TODO: Handle this case.
       case AuthenticationProgress.authenticated:
-        // TODO: Handle this case.
     }
   }
 
@@ -80,7 +81,8 @@ class AuthenticationBloc
       AuthenticationLogoutRequested event,
       Emitter<AuthenticationState> emit,
       ) {
-    _authenticationRepository.logOut();
+    emit( const AuthenticationState.unknown());
+    //_authenticationRepository.logOut(); cause only app side problem no need go to repo now
     _userRepository.clearUser();
   }
 

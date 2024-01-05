@@ -1,4 +1,5 @@
 import 'package:film_catalog_bloc/repositories/authentication_repository/authentication_repository_base.dart';
+import 'package:film_catalog_bloc/user_interaction/bloc/user_lists_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:formz/formz.dart';
@@ -25,15 +26,6 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
   @override
   void initState() {
     super.initState();
-    controller.addListener(() {
-      final String text = controller.text.toLowerCase();
-      /*controller.value = controller.value.copyWith(
-        text: text,
-        selection:
-        TextSelection(baseOffset: text.length, extentOffset: text.length),
-        composing: TextRange.empty,
-      );*/
-    });
   }
 
   @override
@@ -58,19 +50,23 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                   header: "Something went wrong",
                   context: context,
                   text: "User not found\r\nWould you like to register?");
+              controller.value = controller.value.copyWith(
+                text: "",
+              );
             }
             if (state.status == AuthenticationProgress.alreadyExist) {
               showMyDialog(
                   header: "",
                   context: context,
                   text: "${state.user.login} already exist!\r\nTry again");
+              BlocProvider.of<LoginBloc>(context).add(const LoginEmailChanged(""));
               controller.value = controller.value.copyWith(
                 text: "",
               );
             }
             if (state.status == AuthenticationProgress.registered) {
               showAuthorisationSuccess(
-                header: "Registration is successful!",
+                  header: "Registration is successful!",
                   context: context,
                   text: "");
             }
@@ -79,6 +75,10 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                   header: "You logged in as ${state.user.login}",
                   context: context,
                   text: "");
+              BlocProvider.of<UserListBloc>(context)
+                .add(GetUserLists(
+                    userWatch: state.userData.toWatch,
+                    userLikes: state.userData.liked));
             }
           },
         ),
@@ -195,16 +195,41 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                                               color: Color.fromRGBO(
                                                   13, 13, 58, 1.0),
                                               fontWeight: FontWeight.w500),
-                                          /* recognizer: TapGestureRecognizer(allowedButtonsFilter: )
-                                          ..onTap = () {
-                                            context.read<LoginBloc>().add(
-                                                const AuthModeChange(register: true));
-                                          },*/
                                         ),
                                       ),
                                     ),
                                   )
-                                : const TextSpan(text: ""),
+                                : WidgetSpan(
+                              child: InkWell(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(6),
+                                  //topRight: Radius.circular(20.0),
+                                ),
+                                focusColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                onTap: () {
+                                  context.read<LoginBloc>().add(
+                                      const AuthModeChange(
+                                          authStat: AuthStat.undefined,
+                                          register: false));
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.only(
+                                      right: 8.0, left: 8.0),
+                                  child: Text(
+                                    "Log In",
+                                    style: TextStyle(
+                                        height: 1,
+                                        decoration:
+                                        TextDecoration.underline,
+                                        color: Color.fromRGBO(
+                                            13, 13, 58, 1.0),
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -213,7 +238,8 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                 },
               ),
               BlocBuilder<LoginBloc, LoginState>(builder: (context, state) {
-                return state.status.isInProgress || (state.authStat == AuthStat.inProgress)
+                return state.status.isInProgress ||
+                        (state.authStat == AuthStat.inProgress)
                     ? const CircularProgressIndicator()
                     : Padding(
                         padding: const EdgeInsets.only(top: 15),
@@ -231,7 +257,6 @@ class _AuthorizationPageState extends State<AuthorizationPage> {
                                 : context
                                     .read<LoginBloc>()
                                     .add(const RegisterSubmitted());
-
                           },
                           child: Container(
                             width: MediaQuery.of(context).size.width,
@@ -294,7 +319,7 @@ class NormalFlow extends StatelessWidget {
           return Container(
             height: 45,
             child: TextField(
-              controller: controller, //todo check
+              controller: controller, //todo check controller Email
               // autofocus: true,
               onChanged: (input) {
                 context.read<LoginBloc>().add(LoginEmailChanged(input));
@@ -367,9 +392,10 @@ Future<void> getAuthPage(
       });
 }
 
-Future<void> getAuthPageWithOutAnimation(
-    {required BuildContext context,
-      String? errorMessage,}) async {
+Future<void> getAuthPageWithOutAnimation({
+  required BuildContext context,
+  String? errorMessage,
+}) async {
   return showModalBottomSheet<void>(
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

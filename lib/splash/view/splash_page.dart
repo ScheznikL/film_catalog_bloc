@@ -11,8 +11,8 @@ class SplashLoad extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Theme.of(context).dialogBackgroundColor,
-      height: MediaQuery.of(context).size.height,
-      width: MediaQuery.of(context).size.width,
+      height: MediaQuery.of(context).size.height - 100,
+      width: MediaQuery.of(context).size.width - 100,
       child: const Center(
           child: SizedBox(
           height: 24,

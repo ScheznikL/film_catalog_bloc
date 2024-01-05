@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:film_catalog_bloc/film_manager/model/film_video.dart';
 import 'package:film_catalog_bloc/film_manager/model/product_companies.dart';
 import 'film.dart';
 import 'genre_model.dart';
@@ -13,7 +14,7 @@ class FilmDetails extends Film {
   final List<Film> similar;
   final int budget;
   final String? originalLanguage;
-
+  final FilmVideo? filmVideo;
 //<editor-fold desc="Data Methods">
 
   const FilmDetails({
@@ -36,32 +37,37 @@ class FilmDetails extends Film {
     required this.budget,
     super.originalTitle,
     this.originalLanguage,
+    this.filmVideo,
   });
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is FilmDetails &&
+      super == other &&
+          other is FilmDetails &&
           runtimeType == other.runtimeType &&
-          id == other.id &&
-          backdropPath == other.backdropPath &&
           genres == other.genres &&
-          overview == other.overview &&
-          popularity == other.popularity &&
-          posterPath == other.posterPath &&
           productCompanies == other.productCompanies &&
-          releaseDate == other.releaseDate &&
           revenue == other.revenue &&
           runtime == other.runtime &&
-          title == other.title &&
-          voteAverage == other.voteAverage &&
-          voteCount == other.voteCount &&
           credits == other.credits &&
           similar == other.similar &&
-          adult == other.adult &&
           budget == other.budget &&
-          originalTitle == other.originalTitle &&
-          originalLanguage == other.originalLanguage);
+          originalLanguage == other.originalLanguage &&
+          filmVideo == other.filmVideo;
+
+  @override
+  int get hashCode =>
+      super.hashCode ^
+      genres.hashCode ^
+      productCompanies.hashCode ^
+      revenue.hashCode ^
+      runtime.hashCode ^
+      credits.hashCode ^
+      similar.hashCode ^
+      budget.hashCode ^
+      originalLanguage.hashCode ^
+      filmVideo.hashCode;
 
   const FilmDetails.empty()
       : genres = const [],
@@ -72,55 +78,13 @@ class FilmDetails extends Film {
         similar = const [],
         budget = 0,
         originalLanguage = '',
+        filmVideo = const FilmVideo.empty(),
         super.empty();
 
-  FilmDetails copyWith({
-    int? id,
-    String? backdropPath,
-    List<GenreModel>? genres,
-    String? overview,
-    double? popularity,
-    String? posterPath,
-    List<ProductCompany>? productCompanies,
-    DateTime? releaseDate,
-    int? revenue,
-    int? runtime,
-    String? title,
-    double? voteAverage,
-    int? voteCount,
-    Credits? credits,
-    List<Film>? similar,
-    bool? adult,
-    int? budget,
-    String? originalTitle,
-    String? originalLanguage,
-  }) {
-    return FilmDetails(
-      id: id ?? this.id,
-      backdropPath: backdropPath ?? this.backdropPath,
-      genres: genres ?? this.genres,
-      overview: overview ?? this.overview,
-      popularity: popularity ?? this.popularity,
-      posterPath: posterPath ?? this.posterPath,
-      productCompanies: productCompanies ?? this.productCompanies,
-      releaseDate: releaseDate ?? this.releaseDate,
-      revenue: revenue ?? this.revenue,
-      runtime: runtime ?? this.runtime,
-      title: title ?? this.title,
-      voteAverage: voteAverage ?? this.voteAverage,
-      voteCount: voteCount ?? this.voteCount,
-      credits: credits ?? this.credits,
-      similar: similar ?? this.similar,
-      adult: adult ?? this.adult,
-      budget: budget ?? this.budget,
-      originalTitle: originalTitle ?? this.originalTitle,
-      originalLanguage: originalLanguage ?? this.originalLanguage,
-    );
-  }
-
 // var ttt =  ProductCompany.fromJson(jsonData['production_companies'][0] as Map<String,dynamic>);
-  FilmDetails.fromJson(Map<String, dynamic> json)
-      : genres = List.of(json['genres']).map((entry) {
+  FilmDetails.fromJson(
+    Map<String, dynamic> json,
+  )   : genres = List.of(json['genres']).map((entry) {
           //var ttt =  List.of(json['genres']);
           return GenreModel.fromJson(entry);
         }).toList(),
@@ -136,7 +100,16 @@ class FilmDetails extends Film {
             .toList(),
         budget = json['budget'],
         originalLanguage = json['original_language'],
+        filmVideo = json['videos'] != null
+            ? FilmVideo.fromJson(
+                List.from(json['videos']["results"]).where((item) {
+                return FilmVideo.fromJson(item).site == "YouTube" &&
+                    FilmVideo.fromJson(item).type == "Trailer";
+              }).firstOrNull)
+            : FilmVideo.fromJson(json['film_video']),
         super.fromJson(json);
+
+//  FilmDetails.videoFromJson():;
 
   @override
   Map<String, dynamic> toJson() {
@@ -150,6 +123,7 @@ class FilmDetails extends Film {
       'similar': {"results": similar.map((e) => e.toJson()).toList()},
       'budget': budget,
       'original_language': originalLanguage,
+      'film_video': filmVideo,
     });
     return json;
   }

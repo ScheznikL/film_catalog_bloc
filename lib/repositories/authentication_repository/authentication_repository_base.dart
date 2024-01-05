@@ -70,7 +70,6 @@ class AuthenticationRepository {
   final _controller = StreamController<AuthenticationStatus>();
 
   Stream<AuthenticationStatus> get status async* {
-    await Future<void>.delayed(const Duration(seconds: 1));
     yield const AuthenticationStatus.unknown();
     yield* _controller.stream;
   }
@@ -129,11 +128,11 @@ class AuthenticationRepository {
       throw UserNotFound(User(login: email, password: password, id: "noId"));
     }
   }
-
+/*
   void logOut() {
     _controller.add(const AuthenticationStatus.unauthenticated(
         status: AuthenticationProgress.unauthenticated));
-  }
+  }*/
 
   void denied() {
     _controller.add(AuthenticationStatus.unknown());
@@ -153,6 +152,8 @@ class AuthenticationRepository {
         _controller.add(AuthenticationStatus.alreadyExist(
             status: AuthenticationProgress.alreadyExist,
             user: User(id: "noId", password: password, login: email)));
+        throw UserAlreadyExist(User(login: email, password: password, id: "noId"));
+
       } else {
         User user =
         User(id: Uuid().v4().toString(), login: email, password: password);
@@ -162,9 +163,7 @@ class AuthenticationRepository {
             status: AuthenticationProgress.userInit, user: user));
       }
     } catch (e) {
-      _controller.add(AuthenticationStatus.error(
-          status: AuthenticationProgress.error, message: e.toString()));
-      throw UserNotFound(User(login: email, password: password, id: "noId"));
+        rethrow;
     }
   }
 }

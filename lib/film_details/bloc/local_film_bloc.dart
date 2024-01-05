@@ -52,12 +52,12 @@ class LocalFilmBloc extends Bloc<LocalFilmEvent, LocalFilmState> {
     }
   }
 
-  @override
+ /* @override
   void onTransition(Transition<LocalFilmEvent, LocalFilmState> transition) {
-    //todo debag clean
+    //
     super.onTransition(transition);
     print(transition);
-  }
+  }*/
 
   Future<void> _saveDataToFile(Map<String, dynamic> jsonData,
       {required int filmId}) async {

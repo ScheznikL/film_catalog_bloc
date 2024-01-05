@@ -11,7 +11,6 @@ import '../../util/transformer.dart';
 part 'popular_films_event.dart';
 part 'popular_films_state.dart';
 
-//todo combine
 class PopularFilmsBloc extends Bloc<PopularFilmsEvent, PopularFilmsState> {
   PopularFilmsBloc({required this.filmsBloc}) : super(const PopularFilmsState()) {
     on<FilmFetched>(

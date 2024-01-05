@@ -4,9 +4,11 @@ import 'package:film_catalog_bloc/splash/splash.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/scheduler/binding.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../login/view/auth_page.dart';
 import '../../film_manager/model/film.dart';
+import '../../util/dialogs.dart';
 import '../../widgets/appbar.dart';
 import '../../widgets/user_drawer_header.dart';
 import '../bloc/popular_films_bloc.dart';
@@ -23,15 +25,19 @@ class InitialPage extends StatefulWidget {
   State<InitialPage> createState() => _InitialPageState();
 }
 
-class _InitialPageState extends State<InitialPage> {
+class _InitialPageState extends State<InitialPage> with TickerProviderStateMixin{
   _InitialPageState();
 
-  var currentPage = DrawerSelection.main;
-  // final List<Film>? popularFilms;
+  AnimationController? _animationController;
+  Animation<double>? _animation;
 
   @override
   void initState() {
     super.initState();
+    _animationController =
+        AnimationController(vsync: this, duration: Duration(seconds: 1));
+    _animation = Tween<double>(begin: -1.0, end: 0.0).animate(CurvedAnimation(
+        parent: _animationController!, curve: Curves.fastOutSlowIn));
   }
 
   @override
@@ -44,68 +50,11 @@ class _InitialPageState extends State<InitialPage> {
         appBar: CustomAppbar(),
         body: Column(
           children: [
-            /* Expanded(
-            flex: 1,
-            child: Container(
-              child: Placeholder(), // todo add buttons
-            ),
-          ),*/
             Expanded(
               flex: 10,
               child: FilmsBuilder(),
             ),
           ],
-        ),
-      ),
-    );
-  }
-/*
-  Widget UserDrawerList() {
-    return Container(
-        padding: EdgeInsets.only(top: 15),
-        child: Column(
-          children: [
-            menuItem(0, "Main page", Icons.dashboard_outlined,
-                currentPage == DrawerSelection.main ? true : false),
-            menuItem(1, "My cabinet", Icons.face,
-                currentPage == DrawerSelection.main ? true : false),
-            menuItem(2, "My likes", Icons.thumb_up,
-                currentPage == DrawerSelection.main ? true : false),
-            menuItem(3, "My list", Icons.checklist,
-                currentPage == DrawerSelection.main ? true : false),
-          ],
-        ));
-  }*/
-
-  Widget menuItem(int id, String title, IconData icon, bool selected) {
-    return Material(
-      color: selected ? Colors.transparent : Colors.grey[300],
-      child: InkWell(
-        onTap: () {
-          Navigator.pop(context);
-          setState(() {
-            switch (id) {
-              case 0:
-                currentPage = DrawerSelection.main;
-                break;
-              case 1:
-                currentPage = DrawerSelection.cabinet;
-                break;
-              case 2:
-                currentPage = DrawerSelection.likes;
-                break;
-              case 3:
-                currentPage = DrawerSelection.list;
-                break;
-            }
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(15.0),
-          child: ListTile(
-            leading: Icon(icon),
-            title: Text(title),
-          ),
         ),
       ),
     );
@@ -125,12 +74,20 @@ class FilmsBuilder extends StatefulWidget {
 
 class _FilmsBuilderState extends State<FilmsBuilder> {
   final _scrollController = ScrollController();
+  //late YoutubePlayerController _controller;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    /*_controller = YoutubePlayerController(
+      initialVideoId: '4AoFA19gbLo',
+      flags: const YoutubePlayerFlags(
+        mute: true,
+      ),
+    );*/
   }
+
 
   @override
   void dispose() {
@@ -158,6 +115,7 @@ class _FilmsBuilderState extends State<FilmsBuilder> {
             return _GridItemFromBlocs(
               index: index,
               state: state,
+             // controller: _controller,
             );
           });
     });
@@ -182,10 +140,11 @@ class _FilmsBuilderState extends State<FilmsBuilder> {
 }
 
 class _GridItemFromBlocs extends StatelessWidget {
-  const _GridItemFromBlocs({required this.state, required this.index});
+  const _GridItemFromBlocs({required this.state, required this.index, /*required this.controller*/});
 
   final PopularFilmsState state;
   final int index;
+  //final YoutubePlayerController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -197,11 +156,11 @@ class _GridItemFromBlocs extends StatelessWidget {
           return const Center(child: Text('fetching error'));
         }
         return PopularFilmContent(
-          popularFilm: state.films[index],
+          popularFilm: state.films[index],/*controller: controller,*/
         );
       case PopularFilmsStatus.initial:
         return PopularFilmContent(
-          popularFilm: state.films[index],
+          popularFilm: state.films[index],/*controller: controller*/
         );
     }
   }
@@ -211,13 +170,18 @@ class PopularFilmContent extends StatelessWidget {
   const PopularFilmContent({
     super.key,
     required this.popularFilm,
+  //  required this.controller
   });
 
   final Film popularFilm;
+  //final YoutubePlayerController controller;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onLongPress: () {
+        getFilmVideo(context: context, filmId: popularFilm.id, /*controller: controller*/);
+    },
       onTap: () {
         Navigator.pushNamed(
           context,

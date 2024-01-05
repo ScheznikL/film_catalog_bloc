@@ -8,7 +8,9 @@ class AuthenticationState extends Equatable {
     this.message = "",
   });
 
-  const AuthenticationState.userAlreadyExist() : this._();
+  const AuthenticationState.userAlreadyExist(User user) : this._(
+      status: AuthenticationProgress.alreadyExist,
+      user: user,);
 
   const AuthenticationState.unknown() : this._();
 

@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:film_catalog_bloc/authentication/authentication.dart';
+import 'package:film_catalog_bloc/login/view/auth_page.dart';
 import 'package:film_catalog_bloc/widgets/appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../film_manager/model/film.dart';
 import '../../login/bloc/login_bloc.dart';
+import '../../repositories/authentication_repository/authentication_repository_base.dart';
 import '../bloc/user_lists_bloc.dart';
 
 class UserCabinetPage extends StatelessWidget {
@@ -45,6 +48,7 @@ class UserCabinetPage extends StatelessWidget {
 
 class ProfilePageUserProfile extends StatelessWidget {
   ProfilePageUserProfile({Key? key}) : super(key: key);
+  bool pressedLogout = false;
 
   @override
   Widget build(BuildContext context) {
@@ -53,67 +57,93 @@ class ProfilePageUserProfile extends StatelessWidget {
     List<Film> filmsToWatch =
         BlocProvider.of<UserListBloc>(context).filmsToWatch;
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                    color: Theme.of(context).focusColor,
-                    padding: const EdgeInsets.all(15),
-                    child: const Center(child: Icon(Icons.person))),
-                Container(
-                    color: Theme.of(context).focusColor,
-                    padding: const EdgeInsets.all(15),
-                    child: const Center(
-                  child: Icon(Icons.logout),
-                ))
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.only(top: 50),
-            width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-                color: Theme.of(context).secondaryHeaderColor,
-                borderRadius: BorderRadius.circular(15)),
-            child: BlocBuilder<LoginBloc, LoginState>(
-              builder: (context, state) {
-                return Column(
+    return BlocBuilder<AuthenticationBloc, AuthenticationState>(
+      builder: (context, state) {
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      state.email.value,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 24),
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 5),
-                      child: ListHorizontalFilmTile(
-                          films: favouriteFilms, title: 'Liked Films'),
-                    ),
-                    Divider(height: 20),
-                    SizedBox(
-                      height: 15,
-                    ),
-                    Divider(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 5),
-                      child: ListHorizontalFilmTile(
-                          films: filmsToWatch, title: 'You Films List'),
-                    ),
+                    Container(
+                        color: Theme.of(context).focusColor,
+                        padding: const EdgeInsets.all(15),
+                        child: Center(
+                            child: IconButton(
+                          icon: Icon(Icons.person),
+                          onPressed: () {
+                            if (pressedLogout) {
+                              BlocProvider.of<LoginBloc>(context)
+                                  .add(const AuthModeChange(register: false, authStat: AuthStat.undefined));
+                              getAuthPageWithOutAnimation(
+                                context: context,
+                              );
+                            }
+                          },
+                        ))),
+                    Container(
+                        color: Theme.of(context).focusColor,
+                        padding: const EdgeInsets.all(15),
+                        child: Center(
+                          child: IconButton(
+                              onPressed: () {
+                                BlocProvider.of<AuthenticationBloc>(context)
+                                    .add(AuthenticationLogoutRequested());
+                                BlocProvider.of<LoginBloc>(context)
+                                    .add(const LoginEmailChanged(""));
+                                BlocProvider.of<UserListBloc>(context)
+                                    .add(const UserListsClearAll());
+                                pressedLogout = true;
+                              },
+                              icon: const Icon(Icons.logout)),
+                        ))
                   ],
-                );
-              },
-            ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.only(top: 50),
+                width: MediaQuery.of(context).size.width,
+                decoration: BoxDecoration(
+                    color: Theme.of(context).secondaryHeaderColor,
+                    borderRadius: BorderRadius.circular(15)),
+                child: BlocBuilder<LoginBloc, LoginState>(
+                  builder: (context, state) {
+                    return Column(
+                      children: [
+                        Text(
+                          state.email.value,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 24),
+                        ),
+                        const SizedBox(height: 4),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 5),
+                          child: ListHorizontalFilmTile(
+                              films: favouriteFilms, title: 'Liked Films'),
+                        ),
+                        Divider(height: 20),
+                        SizedBox(
+                          height: 15,
+                        ),
+                        Divider(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 5),
+                          child: ListHorizontalFilmTile(
+                              films: filmsToWatch, title: 'You Films List'),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

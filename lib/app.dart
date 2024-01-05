@@ -12,20 +12,11 @@ import 'package:film_catalog_bloc/user_interaction/likes/likes_list.dart';
 import 'package:film_catalog_bloc/user_interaction/watch/watch_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'authentication/bloc/authentication_bloc.dart';
 import 'init/view/init_page.dart';
 import 'login/view/auth_page.dart';
-
-// You can pass any object to the arguments parameter.
-// In this example, create a class that contains both
-// a customizable title and message.
-class ScreenArguments {
-  final String title;
-  final String message;
-
-  ScreenArguments(this.title, this.message);
-}
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -34,12 +25,15 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> with TickerProviderStateMixin{
+class _AppState extends State<App> with TickerProviderStateMixin {
   late final AuthenticationRepository _authenticationRepository;
   late final UserRepository _userRepository;
   late final FilmAPIRepository _filmAPIRepository;
   AnimationController? _animationController;
   Animation<double>? _animation;
+
+
+
   var navigatorKey;
 
   @override
@@ -54,9 +48,8 @@ class _AppState extends State<App> with TickerProviderStateMixin{
         AnimationController(vsync: this, duration: Duration(seconds: 1));
     _animation = Tween<double>(begin: -1.0, end: 0.0).animate(CurvedAnimation(
         parent: _animationController!, curve: Curves.fastOutSlowIn));
-
-
   }
+
 
   @override
   void dispose() {
@@ -84,7 +77,7 @@ class _AppState extends State<App> with TickerProviderStateMixin{
                 authenticationRepository: _authenticationRepository,
               ),
             ),
-           BlocProvider(
+            BlocProvider(
               create: (_) => UserListBloc(userRepository: _userRepository),
             ),
             BlocProvider(
@@ -99,12 +92,13 @@ class _AppState extends State<App> with TickerProviderStateMixin{
             navigatorKey: navigatorKey,
             initialRoute: '/',
             routes: <String, WidgetBuilder>{
-              '/': (BuildContext context) => AppView(animationController: _animationController!),
+              '/': (BuildContext context) =>
+                  AppView(animationController: _animationController!),
               '/signup': (BuildContext context) => const AuthorizationPage(),
               '/filmdetails': (BuildContext context) => FilmDetailsPage(),
-              '/watchlist' : (BuildContext context) => WatchListPage(),
-              '/favourites' : (BuildContext context) => FavouritesListPage(),
-              '/cabinet' : (BuildContext context) => UserCabinetPage(),
+              '/watchlist': (BuildContext context) => WatchListPage(),
+              '/favourites': (BuildContext context) => FavouritesListPage(),
+              '/cabinet': (BuildContext context) => UserCabinetPage(),
             },
             onGenerateRoute: (_) => SplashLoad.route(),
             // home: AppView(navigatorKey: navigatorKey),
@@ -127,8 +121,8 @@ onGenerateRoute: (settings) {
 }
  */
 
-
-class AppView extends StatelessWidget { // todo converted not a prob
+class AppView extends StatelessWidget {
+  // todo converted not a prob
   const AppView({super.key, required this.animationController});
   final AnimationController animationController;
   @override
@@ -170,9 +164,9 @@ class AppView extends StatelessWidget { // todo converted not a prob
           case AuthenticationProgress.userinit:
           // TODO: Handle this case.
         }*/
-         if (state.status case AuthenticationProgress.unauthenticated) {
+        if (state.status case AuthenticationProgress.unauthenticated) {
           WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-            getAuthPage(context: context,controller: animationController);
+            getAuthPage(context: context, controller: animationController);
           });
         }
         /* else if (state.status case AuthenticationProgress.error) {
@@ -202,21 +196,21 @@ class _PopularFilmsState extends State<_PopularFilms> {
       if (state.status case APIStatus.loadingPopularFilms) {
         return const Center(child: SplashLoad());
       } else if (state.status case APIStatus.popularFilmsLoaded) {
-        return InitialPage(/**/);
+        return const InitialPage(/**/);
       } else if (state.status case APIStatus.error) {
         return Center(
             child:
                 Text('Error', style: Theme.of(context).textTheme.titleMedium));
       } else if (state.status case APIStatus.unknown) {
-        return Center(
-            child: Text('unknown',
-                style: Theme.of(context).textTheme.titleMedium));
+        return const Center(
+            child: SplashLoad());
       } else if (state.status case APIStatus.empty) {
         return const Center(child: Text('empty'));
       } else if (state.status case APIStatus.loadingFilmDetails) {
         return const Center(child: Text('Error'));
       }
-      return InitialPage(/**/);/*const Center(child: CircularProgressIndicator());*/
+      return InitialPage(
+          /**/); /*const Center(child: CircularProgressIndicator());*/
     });
   }
 }
