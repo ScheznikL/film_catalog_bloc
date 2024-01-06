@@ -173,7 +173,7 @@ class FilmDetailsWidget extends StatelessWidget {
               CreditsSection(
                 credits: film!.credits,
               ),
-              FeedbackButtons(film: film ?? const Film.empty()),
+              FeedbackButtons(film: film ?? const FilmDetails.empty()),
               ListFilmDetailsPages(similar: film!.similar),
             ],
           ),
@@ -268,7 +268,7 @@ class ListFilmDetailsPages extends StatelessWidget {
 class FeedbackButtons extends StatelessWidget {
   const FeedbackButtons({super.key, required this.film});
 
-  final Film film;
+  final FilmDetails film;
 
   @override
   Widget build(BuildContext context) {
@@ -383,7 +383,7 @@ class FeedbackButtons extends StatelessWidget {
                         onPressed: () {
                           context.read<FilmShareBloc>().add(ShareFilm(
                               title: film.title!,
-                              videoUrl: film.video! ? film.backdropPath : ""));
+                              videoUrl: film.filmVideo?.trailerUrl ?? ""));
                         },
                         style: ButtonStyle(
                           foregroundColor: MaterialStateProperty.resolveWith(

@@ -28,7 +28,7 @@ class UserCabinetPage extends StatelessWidget {
             child: ListView(
               physics: const BouncingScrollPhysics(),
               children: [
-                const SizedBox(height: 25),
+                const SizedBox(height: 10),
                 ProfilePageUserProfile(),
 
                 /* const ProfilePageLists(),
@@ -69,14 +69,16 @@ class ProfilePageUserProfile extends StatelessWidget {
                   children: [
                     Container(
                         color: Theme.of(context).focusColor,
-                        padding: const EdgeInsets.all(15),
+                        padding: const EdgeInsets.all(10),
                         child: Center(
                             child: IconButton(
                           icon: Icon(Icons.person),
                           onPressed: () {
                             if (pressedLogout) {
-                              BlocProvider.of<LoginBloc>(context)
+                             /* BlocProvider.of<LoginBloc>(context)
                                   .add(const AuthModeChange(register: false, authStat: AuthStat.undefined));
+                              BlocProvider.of<AuthenticationBloc>(context)
+                                  .add(const AuthenticationStatusChanged(AuthenticationStatus.unauthenticated(status: AuthenticationProgress.unauthenticated)));*/
                               getAuthPageWithOutAnimation(
                                 context: context,
                               );
@@ -85,7 +87,7 @@ class ProfilePageUserProfile extends StatelessWidget {
                         ))),
                     Container(
                         color: Theme.of(context).focusColor,
-                        padding: const EdgeInsets.all(15),
+                        padding: const EdgeInsets.all(10),
                         child: Center(
                           child: IconButton(
                               onPressed: () {
@@ -103,11 +105,11 @@ class ProfilePageUserProfile extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.only(top: 50),
+                padding: const EdgeInsets.only(top: 25),
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
                     color: Theme.of(context).secondaryHeaderColor,
-                    borderRadius: BorderRadius.circular(15)),
+                    borderRadius: BorderRadius.circular(25)),
                 child: BlocBuilder<LoginBloc, LoginState>(
                   builder: (context, state) {
                     return Column(
@@ -124,7 +126,7 @@ class ProfilePageUserProfile extends StatelessWidget {
                           child: ListHorizontalFilmTile(
                               films: favouriteFilms, title: 'Liked Films'),
                         ),
-                        Divider(height: 20),
+                        Divider(height: 5),
                         SizedBox(
                           height: 15,
                         ),
